@@ -1,0 +1,21 @@
+{
+  "name": "engineering-workflow",
+  "description": "Bronson AI engineering workflow: ticket scoping, repo conventions, Notion docs, and the default engineering toolchain (Linear, GitHub, Notion).",
+  "author": {
+    "name": "Bronson AI Engineering"
+  },
+  "mcpServers": {
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp"
+    }
+  }
+}

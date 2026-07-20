@@ -1,0 +1,14 @@
+{
+  "name": "bronson-tools",
+  "owner": {
+    "name": "Bronson AI Engineering"
+  },
+  "description": "Internal Claude Code plugins for Bronson AI.",
+  "plugins": [
+    {
+      "name": "engineering-workflow",
+      "source": "./plugins/engineering-workflow",
+      "description": "Ticket-first engineering workflow (Linear -> repo -> Notion), plus the default engineering toolchain: Linear, GitHub, and Notion MCP servers."
+    }
+  ]
+}
