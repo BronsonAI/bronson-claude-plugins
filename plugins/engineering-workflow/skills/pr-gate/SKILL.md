@@ -132,8 +132,8 @@ edit that one instead.
 ```bash
 # find a previous verdict
 gh api repos/<owner/repo>/issues/<n>/comments --jq '.[] | select(.body | contains("<!-- bronson-pr-gate -->")) | .id'
-# update it in place
-gh api -X PATCH repos/<owner/repo>/issues/comments/<id> -f body@<path>
+# update it in place — -F reads the value from a file when it starts with @
+gh api -X PATCH repos/<owner/repo>/issues/comments/<id> -F body=@<path>
 ```
 
 ## 6. Verdict format

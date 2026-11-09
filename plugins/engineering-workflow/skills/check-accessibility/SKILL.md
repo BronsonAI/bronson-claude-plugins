@@ -62,13 +62,31 @@ No Playwright and no appetite to add it → run axe against built static output 
 
 ```bash
 npm i -D eslint-plugin-jsx-a11y
-npx eslint --no-eslintrc --plugin jsx-a11y --rulesdir /dev/null <paths>
 ```
 
-Prefer wiring `plugin:jsx-a11y/recommended` into the existing ESLint config if the repo
-has one, rather than a one-off invocation — but **do not add it to CI as a blocking job**
-unless the user asks. A lint rule that fails everyone's build on day one gets disabled
-within a week.
+**Wire it into the repo's existing ESLint config** rather than invoking it standalone.
+Flat config (ESLint 9, what current repos use):
+
+```js
+import jsxA11y from 'eslint-plugin-jsx-a11y'
+
+export default [
+  // ...existing config
+  jsxA11y.flatConfigs.recommended,
+]
+```
+
+Legacy `.eslintrc`: add `plugin:jsx-a11y/recommended` to `extends`.
+
+For a one-off run that leaves the repo config alone, write a throwaway flat config and
+point at it — do not reach for `--no-eslintrc` or `--rulesdir`, which ESLint 9 removed:
+
+```bash
+npx eslint --config <tmp-config.mjs> --no-config-lookup <paths>
+```
+
+**Do not add this to CI as a blocking job** unless the user asks. A lint rule that fails
+everyone's build on day one gets disabled within a week.
 
 Static analysis catches the markup-level issues axe cannot see without rendering: missing
 `alt`, handlers on non-interactive elements, `tabIndex` misuse, labels not associated with
