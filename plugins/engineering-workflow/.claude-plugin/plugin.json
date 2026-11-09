@@ -1,6 +1,6 @@
 {
   "name": "engineering-workflow",
-  "description": "Bronson AI engineering workflow: ticket scoping, repo conventions, Notion docs, and the default engineering toolchain (Linear, GitHub, Notion).",
+  "description": "Bronson AI engineering workflow: Linear ticket scoping, branch and PR conventions, PR review gating, review feedback, hotfix and release promotion, accessibility audits, and the default toolchain (Linear, GitHub, Notion).",
   "author": {
     "name": "Bronson AI Engineering"
   },

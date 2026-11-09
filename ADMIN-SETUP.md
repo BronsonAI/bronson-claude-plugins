@@ -1,23 +1,24 @@
 # Admin setup — deploy org-wide in Claude Code
 
-This repo is a plugin marketplace. Once it's pushed to GitHub, an Enterprise Owner
-enables it for everyone by pasting the block below into managed settings (Claude admin
-console → server-managed settings, or your managed-settings.json / MDM profile).
+This repo is a plugin marketplace. An Enterprise Owner enables it for everyone by pasting
+the block below into managed settings (Claude admin console → server-managed settings, or
+managed-settings.json / MDM profile).
 
-Replace `bronson-ai/claude-plugins` with your actual GitHub repo path.
+The repo path below is this repository. It is already deployed org-wide — this doc is the
+record of how, and what to change if it ever moves.
 
 ```json
 {
   "extraKnownMarketplaces": {
     "bronson-tools": {
-      "source": { "source": "github", "repo": "bronson-ai/claude-plugins" }
+      "source": { "source": "github", "repo": "BronsonAI/bronson-claude-plugins" }
     }
   },
   "enabledPlugins": {
     "engineering-workflow@bronson-tools": true
   },
   "strictKnownMarketplaces": [
-    { "source": "github", "repo": "bronson-ai/claude-plugins" }
+    { "source": "github", "repo": "BronsonAI/bronson-claude-plugins" }
   ],
   "strictPluginOnlyCustomization": ["mcp"]
 }
@@ -49,7 +50,7 @@ For contractor laptops or any device not covered by managed settings, commit thi
 {
   "extraKnownMarketplaces": {
     "bronson-tools": {
-      "source": { "source": "github", "repo": "bronson-ai/claude-plugins" }
+      "source": { "source": "github", "repo": "BronsonAI/bronson-claude-plugins" }
     }
   },
   "enabledPlugins": {
