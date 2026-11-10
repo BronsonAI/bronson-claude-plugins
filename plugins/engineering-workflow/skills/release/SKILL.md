@@ -121,9 +121,20 @@ Not a draft — a release PR has nothing to iterate on. (Required checks do run 
 draft; a draft simply cannot be merged. The reason to skip draft here is that there is no
 iteration step to protect, not that CI would be skipped.)
 
-Run `pr-gate` on it. For a release PR the gate is narrower than for a feature PR: the code
-was already gated on the way into `develop`. What matters here is the blocking pass over the
-combined diff, the migration and config flags from step 3, and whether `main` is behind.
+Run `pr-gate` on it in release mode. **The release PR is a tracking artifact, not a
+review.** Every feature in it was gated and approved on the way into `develop`; re-reviewing
+them here would find nothing new and would put a second veto on work that already passed.
+
+So the gate does not re-read the features. It looks only for what is new at promotion
+time, which is the handful of things no single feature PR could have seen:
+
+- The migration and config or secret flags from step 3, across the combined diff.
+- Whether `main` is behind — content on `main` that `develop` lacks (step 2).
+- Two changes that are each fine alone and conflict together: competing migrations on one
+  table, a config key set twice.
+
+Nothing else blocks a release. A convention finding on the release branch is noise by
+construction — the head is `develop` and the commits are merges.
 
 Then, **only on `APPROVED`**:
 
