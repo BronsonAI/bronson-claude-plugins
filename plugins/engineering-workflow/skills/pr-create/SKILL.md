@@ -30,8 +30,14 @@ Stop and fix before opening anything:
   Already pushed, or the repo has its own convention → leave it and say so in the report.
   Never rename and force-push a branch to satisfy the format.
 - **Branch pushed:** `git push -u origin <branch>`.
-- **CI expectations known:** check whether required checks exist on the base branch so
-  you know what the gate will be waiting on.
+- **CI expectations known:** ask the base branch what it requires, so step 5b knows
+  whether "no checks reported" means nothing to wait for or nothing registered yet. A 404
+  here means the branch is unprotected, which is the answer 0 — see `pr-gate` §2.
+
+  ```bash
+  gh api repos/<owner/repo>/branches/<base>/protection \
+    --jq '.required_status_checks.contexts // [] | length' 2>/dev/null || echo 0
+  ```
 
 ## 2. Pick the base
 

@@ -54,12 +54,14 @@ gh pr list --base main --state merged --limit 50 \
 gh pr list --base develop --state merged --search "ENG-221" --json number,headRefName
 ```
 
-  Look each hotfix key up directly rather than listing back-merges and filtering. A
-  `--limit` applies before the jq filter, and on `develop` the recent merges are mostly
-  feature PRs, so a back-merge older than the window drops out and its hotfix looks
-  outstanding, stopping the release for nothing. A merged `hotfix/*` into `main` with no
-  merged `backmerge/*` carrying the same `ENG-###` is the thing to stop for. Everything else is normal promotion history. Merging `develop`
-  into `main` is a three-way merge and does not by itself revert a `main`-only commit.
+  A merged `hotfix/*` into `main` with no merged `backmerge/*` carrying the same
+  `ENG-###` is the thing to stop for. Everything else is normal promotion history.
+
+  Look each key up rather than listing back-merges and filtering: a `--limit` applies
+  before the jq filter, and on `develop` the recent merges are mostly feature PRs, so a
+  back-merge older than the window drops out and its hotfix looks outstanding — stopping
+  the release for nothing. Merging `develop` into `main` is a three-way merge and does not
+  by itself revert a `main`-only commit.
 
 The compare API caps at 250 commits and 300 files; past that it truncates silently. Use
 `git log origin/main..origin/develop` for the commit list and say so explicitly if either
@@ -141,7 +143,8 @@ So the gate does not re-read the features. It looks only for what is new at prom
 time, which is the handful of things no single feature PR could have seen:
 
 - The migration and config or secret flags from step 3, across the combined diff.
-- Whether `main` is behind — content on `main` that `develop` lacks (step 2).
+- A merged hotfix with no matching back-merge (step 2). Not `behind_by`, and not any
+  `git log` form of it — step 2 says why.
 - Two changes that are each fine alone and conflict together: competing migrations on one
   table, a config key set twice.
 
