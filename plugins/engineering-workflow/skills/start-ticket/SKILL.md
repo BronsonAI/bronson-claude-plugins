@@ -53,12 +53,18 @@ If this is an urgent production break that cannot wait for the normal path, stop
 `git config user.name`, not from the GitHub login. `KEY` is uppercase. `description` is
 kebab-case, five words at most.
 
-**Pick the base before branching.** If you have an open PR in this repo, branch off its
-head, not `develop`:
+**Pick the base before branching.** If you have an open *feature* PR in this repo, branch
+off its head, not `develop`:
 
 ```bash
+git fetch origin
 gh pr list --author @me --state open --json number,headRefName,baseRefName
 ```
+
+Never stack on a PR whose base is `main` — a hotfix or a release. When that parent merges,
+GitHub retargets your child to `main`, and the feature ships straight to production
+without ever soaking in dev. Skip `backmerge/*` heads for the same reason. If more than
+one candidate survives, take the nearest ancestor and ask when it is ambiguous.
 
 Successive PRs tend to touch the same shared files — `package.json`, lockfiles, CI config
 — so two branches cut from `develop` conflict the moment one merges. Stacking serialises

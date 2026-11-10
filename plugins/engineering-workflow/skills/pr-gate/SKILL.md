@@ -118,7 +118,17 @@ so do not attempt one and do not report the failure as a problem with the PR.
 gh pr comment <n> --body-file <path>
 ```
 
-**On someone else's PR, post a formal review:**
+**On someone else's PR, show the verdict and get an explicit yes before submitting it.**
+`--approve` and `--request-changes` are real reviews under the user's name: an approval
+can satisfy a branch protection rule and clear the way to a merge, and a request for
+changes blocks a teammate. Neither is yours to submit on a reading of a diff. Print the
+verdict body, say which of the two you are about to post, and wait. "Review this PR" asks
+for the review, not for it to be filed.
+
+If the user does not want to post, give them the body and stop. Posting with
+`--comment` instead of a state is the safe middle ground when they are unsure.
+
+Once they have said yes:
 
 ```bash
 gh pr review <n> --request-changes --body-file <path>   # CHANGES REQUESTED

@@ -1,12 +1,18 @@
 ---
 name: pr-create
-description: Open a pull request as a draft, gate it with pr-gate, then mark it ready and request the engineering team as reviewer. Use when asked to open, raise or create a PR, to put work up for review, or when finishing a ticket's implementation.
+description: Open a pull request as a draft, gate it with pr-gate, then mark it ready and request the engineering team as reviewer. Use when explicitly asked to open, raise or create a PR, or to put work up for review. Not triggered by work merely being finished.
 ---
 
 # pr-create
 
 Opens the PR as a draft, runs `pr-gate` against it, and only promotes it to ready once
 the verdict allows. A PR never reaches a human reviewer without having been gated first.
+
+**This skill is a chain of outward-facing actions** — it pushes a branch, opens a PR,
+marks it ready, pings the engineering team and moves a Linear ticket. Finishing a piece of
+work is not a request to do any of that. Run it only when the user asks for a PR in words,
+and before the first push show what you are about to do: the branch, the base, the files
+and the reviewer. One "go" covers the chain; "ok that's done" does not start it.
 
 ## 1. Preconditions
 
