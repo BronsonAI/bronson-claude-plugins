@@ -33,7 +33,9 @@ ticket, say so rather than silently widening the work.
 ```
 
 - `type` — `feature`, `fix`, `improvement` or `hotfix`, from the ticket's type label
-  (`Bug` becomes `fix`).
+  (`Bug` becomes `fix`). `hotfix` overrides the label: a `Bug` shipped through `hotfix`
+  is `hotfix/`, not `fix/`. For work with no ticket — a chore, CI, docs — use `chore`,
+  `ci` or `docs` and drop the `{KEY}` segment.
 - `first-name` — the author's first name, lowercase. Not a username.
 - `KEY` — the Linear key, uppercase, matching the commit prefix and the artifact
   directory so all three read the same.
@@ -43,7 +45,16 @@ ticket, say so rather than silently widening the work.
 feature/kevin-ENG-115-case-intake-postgres
 fix/suraj-ENG-207-duplicate-webhook-retry
 hotfix/kevin-ENG-221-token-refresh-loop
+chore/kevin-bump-node-22
 ```
+
+Two names are reserved and sit outside the format: `backmerge/main-to-develop-{KEY}`
+(`hotfix` step 7) and `develop` itself as the head of a release PR.
+
+This is the standard for new branches, and it is deliberately not what older branches in
+the org look like. Do not rename a branch that is already pushed to make it match — the
+cost of broken links outweighs the tidiness. A repo's own `CLAUDE.md` or `CONTRIBUTING`
+wins over this section.
 
 ## 3. Branching strategy
 
@@ -52,6 +63,22 @@ feature/* ──▶ develop ──▶ main
                  │          │
               dev env    prod env
 ```
+
+**Which repos this applies to.** Every actively developed repo, unless it is explicitly
+exempt. Exempt today: `infra-live` and `infra-modules`, which branch off `main` — say
+"exempt", not "there is no develop". Dormant and archived repos are out of scope.
+
+Check once, at the start of any skill that bases or targets a branch:
+
+```bash
+git ls-remote --exit-code --heads origin develop >/dev/null 2>&1 && echo develop || echo exempt
+```
+
+In an exempt repo the integration branch is the default branch
+(`gh repo view --json defaultBranchRef --jq .defaultBranchRef.name`): base there, PR
+there, skip `release` and the `hotfix` back-merge, and do not claim what a merge deploys
+— read the repo's `CLAUDE.md` for that. Never create a `develop` branch to make a repo
+fit this section.
 
 - Feature, fix and improvement branches base on **`develop`**. CI/CD deploys `develop`
   to the dev environment.
@@ -75,10 +102,15 @@ The reason is concrete: successive PRs in a repo tend to touch the same few shar
 — `package.json`, lockfiles, CI config — so two branches cut from `develop` conflict the
 moment one of them merges. Stacking serialises that.
 
-GitHub retargets a child to `develop` automatically when the parent merges, but **only
-while the child is open**. Merging a parent *and deleting its branch* closes the child
-PR, and GitHub then refuses both to reopen it and to change its base. Retarget the child
-to `develop` before merging the parent, or keep the parent's branch until you have.
+When a parent is merged through GitHub, GitHub retargets its open children to the
+parent's base, including when the merge deletes the branch. What breaks that is a parent
+branch deleted **outside** that flow, or a parent PR **closed unmerged** and then tidied
+up: the child PR closes, and GitHub refuses both to reopen it and to change its base.
+
+So: never delete a parent branch by hand, and before merging a child confirm its base is
+`develop`. Retargeting the child yourself before the parent merges is still the safe
+move and costs nothing — do it when you are about to close a parent unmerged, or when
+anyone other than GitHub is going to delete the branch.
 
 ## 4. Commits
 
@@ -151,7 +183,10 @@ asks to evaluate a change.
 - **npm 11 does not run dependency install scripts unless approved.** It prints a single
   `npm warn install-scripts` line that is easy to miss, and esbuild's postinstall is what
   fetches its platform binary — so Vite fails later with an unrelated-looking error. After
-  installing, run `npm install-scripts ls` and approve the legitimate ones.
+  installing, run `npm install-scripts ls`, show the user the list, and approve only the
+  packages they name. Never `--all`: approving an install script runs arbitrary code from
+  a dependency, which is the user's call, not Claude's. Say in the PR that
+  `package.json` changed.
 - **Local Playwright runs prove less than they look.** `reuseExistingServer` is on outside
   CI, so a suite can attach to an unrelated dev server already on the port and produce
   both false failures and false passes. Before trusting a local run, stop the dev stack

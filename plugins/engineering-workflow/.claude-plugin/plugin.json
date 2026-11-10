@@ -1,6 +1,6 @@
 {
   "name": "engineering-workflow",
-  "description": "Bronson AI engineering workflow: Linear ticket scoping, branch and PR conventions, PR review gating, review feedback, hotfix and release promotion, accessibility audits, and the default toolchain (Linear, GitHub, Notion).",
+  "description": "Bronson AI engineering workflow: Linear ticket scoping, branch and PR conventions, PR review gating, review feedback, hotfix and release promotion, accessibility audits, and the default toolchain. Bundles the Linear and Notion MCP servers; GitHub is driven through the gh CLI.",
   "author": {
     "name": "Bronson AI Engineering"
   },
@@ -8,10 +8,6 @@
     "linear": {
       "type": "http",
       "url": "https://mcp.linear.app/mcp"
-    },
-    "github": {
-      "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/"
     },
     "notion": {
       "type": "http",

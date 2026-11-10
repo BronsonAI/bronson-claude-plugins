@@ -28,7 +28,7 @@ severities in that skill are the policy, versioned there rather than in a separa
 Linear ticket
    │  start-ticket      branch + docs/tickets/{KEY}/{intent,spec,plan}.md
    ▼                    ── human gate: plan approved ──
-feature/{first-name}-{KEY}-{description}
+{type}/{first-name}-{KEY}-{description}
    │  pr-create         draft PR ▸ pr-gate ▸ ready ▸ request engineering
    │  fix-review        feedback ▸ fixes ▸ replies ▸ re-gate
    ▼
@@ -60,7 +60,9 @@ ADMIN-SETUP.md                           how the org-wide rollout is configured
 ## Changing a skill
 
 `plugin.json` carries no `version` field on purpose: every commit to `main` is a new
-version and seats pick it up automatically. There is no release step and no admin action.
+version. Seats pick it up automatically only while `autoUpdate: true` is set on the
+managed marketplace entry (see `ADMIN-SETUP.md`); otherwise a seat stays on the version it
+last pulled until someone runs `/plugin marketplace update bronson-tools`.
 That cuts both ways — **a merge to `main` changes how Claude behaves for everyone**, so
 changes go through a PR like any other code.
 
@@ -76,7 +78,8 @@ claude plugin validate .
 
 ## MCP servers
 
-The plugin bundles Linear, GitHub and Notion over HTTP, each authenticating by browser
-OAuth on first use. `strictPluginOnlyCustomization: ["mcp"]` in managed settings means MCP
-servers can only come from this plugin, so nobody quietly substitutes a personal
-connection. See `ADMIN-SETUP.md`.
+The plugin bundles Linear and Notion over HTTP, each authenticating by browser OAuth on
+first use. The skills themselves drive GitHub through the `gh` CLI, not MCP.
+`strictPluginOnlyCustomization: ["mcp"]` in managed settings stops *user and project* MCP
+servers — including a repo's `.mcp.json` — but not claude.ai connectors. See
+`ADMIN-SETUP.md`.
