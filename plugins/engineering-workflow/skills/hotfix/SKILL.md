@@ -71,7 +71,20 @@ A hotfix gets less review and no dev-environment soak, so local verification car
 weight than usual. Run the tests, and add one that fails without the fix. State what you
 actually ran.
 
-## 6. PR into main
+## 6. Gate the branch, then PR into main
+
+Gate before creating, exactly as `pr-create` does. Run `pr-gate` in branch mode against
+`origin/main...HEAD`.
+
+| Verdict | Action |
+|---|---|
+| `APPROVED` | Push and open the PR |
+| `CHANGES REQUESTED` | Fix the blocking findings, commit, gate again. Loop until nothing blocks. |
+
+Urgency is the reason to gate earlier, not the reason to skip it. This branch is headed
+for `main`, where the merge *is* the production deploy: a blocking finding found after
+the PR is open has to be caught by the one reviewer standing between it and prod. Fixing
+it here costs a minute.
 
 ```bash
 git push -u origin hotfix/kevin-ENG-221-token-refresh-loop
@@ -87,7 +100,13 @@ The body must state:
 - How it was verified.
 - Whether any data needs repair after the fix deploys.
 
-Then run `pr-gate`. On `APPROVED`:
+Then check CI, which the branch gate could not see:
+
+```bash
+gh pr checks <n> --required --watch
+```
+
+A required check failing is blocking: leave it a draft and report. Otherwise:
 
 ```bash
 gh pr ready <n>
@@ -121,7 +140,9 @@ rebase it, because its commits are already on `main`. Keep both changes; if the 
 picking. Merge this PR with a merge commit, not a squash: a squash leaves `main`'s commits
 outside `develop`'s history and the next release reports a phantom un-back-merged hotfix.
 
-Gate it like any other PR and put a reviewer on it. It is a real PR, not bookkeeping.
+Gate it like any other PR — in branch mode before you open it, same as step 6 — and put
+a reviewer on it. It is a real PR, not bookkeeping. `pr-gate`'s back-merge mode skips the
+naming, ticket and commit-prefix checks, so a clean back-merge gates clean.
 
 **This skill does not merge the hotfix PR.** Merging to `main` is a production deploy and
 the user does it. Never `gh pr merge --admin`. Open the back-merge PR as soon as the
