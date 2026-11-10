@@ -51,13 +51,17 @@ gh pr list --base main --state merged --limit 50 \
   --json number,headRefName --jq '.[] | select(.headRefName | startswith("hotfix/")) | .headRefName'
 
 # for each key above, look the back-merge up directly rather than listing and filtering
-gh pr list --base develop --state merged --search "ENG-221" --json number,headRefName
+gh pr list --base develop --state merged --search "ENG-221" --json number,headRefName \
+  --jq '.[] | select(.headRefName | startswith("backmerge/"))'
 ```
 
   A merged `hotfix/*` into `main` with no merged `backmerge/*` carrying the same
   `ENG-###` is the thing to stop for. Everything else is normal promotion history.
 
-  Look each key up rather than listing back-merges and filtering: a `--limit` applies
+  `--search` is full text, so keep the `backmerge/` filter on the command: without it a
+  feature PR that merely mentions the key ("follow-up to ENG-221") passes as the
+  back-merge. Look each key up rather than listing back-merges and filtering: a `--limit`
+  applies
   before the jq filter, and on `develop` the recent merges are mostly feature PRs, so a
   back-merge older than the window drops out and its hotfix looks outstanding — stopping
   the release for nothing. Merging `develop` into `main` is a three-way merge and does not

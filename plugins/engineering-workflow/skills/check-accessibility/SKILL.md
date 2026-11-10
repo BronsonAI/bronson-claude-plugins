@@ -102,8 +102,20 @@ Check which parser package the repo has first — importing the wrong one fails 
 module-not-found before a single file is linted:
 
 ```bash
-node -e "require.resolve('typescript-eslint')" 2>/dev/null && echo meta || echo parser-only
+node -e "require.resolve('typescript-eslint')" 2>/dev/null && echo meta \
+  || node -e "require.resolve('@typescript-eslint/parser')" 2>/dev/null && echo parser-only \
+  || echo no-ts
 ```
+
+Three outcomes, not two. A plain JavaScript React app has neither package, and importing
+`@typescript-eslint/parser` there fails with module-not-found before a file is linted —
+use the `no-ts` config below, which needs no parser at all.
+
+The probe answers "can the import resolve from here", which is the question that matters.
+Under pnpm's isolated `node_modules` that can be `no-ts` on a TypeScript repo whose
+workspace package does declare the parser: run it from the package holding the UI code,
+not the repo root, and check `package.json` if the answer contradicts the file extensions
+you are about to lint.
 
 ```js
 // tmp-a11y.mjs - "meta": the typescript-eslint package is present
@@ -131,6 +143,17 @@ export default [
       parser: tsParser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     } },
+  jsxA11y.flatConfigs.recommended,
+]
+```
+
+```js
+// tmp-a11y.mjs - "no-ts": a plain JavaScript repo, no TypeScript parser needed
+import jsxA11y from 'eslint-plugin-jsx-a11y'
+
+export default [
+  { files: ['**/*.{js,jsx}'],
+    languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } } },
   jsxA11y.flatConfigs.recommended,
 ]
 ```

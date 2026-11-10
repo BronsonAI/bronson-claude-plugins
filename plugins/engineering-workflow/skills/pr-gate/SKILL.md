@@ -80,17 +80,25 @@ Then:
     branch whether it *has* required checks:
 
     ```bash
-    gh api repos/<owner/repo>/branches/<base>/protection \
-      --jq '.required_status_checks.contexts // [] | length' 2>/dev/null || echo 0
+    gh api repos/<owner/repo>/rules/branches/<base> \
+      --jq '[.[] | select(.type=="required_status_checks")
+             | .parameters.required_status_checks[]?.context] | length'
     ```
 
-    **This 404s with "Branch not protected" on an unprotected branch** — that is the
-    answer "none configured", not an error. Treat a 404 as 0, which is what the
-    `|| echo 0` is for; do not report it as a failed lookup.
+    Use `rules/branches`, **not** `branches/<base>/protection`. The protection endpoint
+    needs admin, and it does not see rulesets at all: this repo's `main` is protected by
+    a ruleset and that endpoint still answers 404 "Branch not protected". A lookup that
+    reports 0 for a protected branch is worse than no lookup, because the gate then says
+    "no required checks" and the PR is marked ready before its checks register.
 
-    0 → genuinely nothing to wait for. Say "no required checks" and move on.
-    Above 0 but none reported → they have not registered yet, which is normal straight
-    after `gh pr create`. Wait and ask again; never mark a PR ready on it.
+    Three outcomes, and the third is not zero:
+
+    - **0 rules** → nothing to wait for. Say "no required checks" and move on.
+    - **above 0, none reported yet** → they have not registered, which is normal straight
+      after `gh pr create`. Wait and ask again; never mark a PR ready on it.
+    - **the lookup itself failed** (auth, network, a 404 you did not expect) → **unknown**,
+      not zero. Say the check is unverified. Never swallow an error into "none
+      configured" with `|| echo 0`.
   - **8** — still pending (without `--watch`; with `--watch` the command waits instead).
   - **a check actually failed** — blocking.
 
@@ -106,7 +114,7 @@ they still run:
 | PR | How to tell | What to run |
 |---|---|---|
 | Release | head `develop`, base `main` | Blocking pass only, plus the migration and config flags and whether a merged hotfix has no matching back-merge (`release` step 2 — not `behind_by`, which is non-zero after every promotion). Skip branch name, ticket, artifacts, commit prefixes — merge commits and unkeyed commits are expected. |
-| Back-merge | head `backmerge/*`, base `develop` | Blocking pass only. Base `develop` is correct here. Never rename the branch or rewrite its commits: they are shared with the hotfix PR and with `main`. |
+| Back-merge | head `backmerge/*`, base `develop` | Blocking pass only. Base `develop` is correct here. Never rename the branch or rewrite its commits: they are shared with the hotfix PR and with `main`. A `NOTICKET` name stays as it is — the key lives in the PR title and body. |
 | Hotfix | head `hotfix/*`, base `main` | Base `main` is correct — that is the whole point of a hotfix. Run every pass normally. The `prod` downtime line is blocking as usual, and a `NOTICKET` placeholder is reported as the outstanding rename, not as a missing ticket. |
 | Exempt repo | no `develop` branch | Base is the default branch, and that is correct. Skip the base-branch check entirely. |
 

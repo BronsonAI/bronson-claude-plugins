@@ -37,8 +37,19 @@ show a one-line draft and take a quick yes — that costs seconds. If the user i
 unanswered, say in your report that the ticket is still to be created and carry on with
 the fix — do not create it unconfirmed. Working without a key, use `NOTICKET` wherever
 `{KEY}` appears (`hotfix/kevin-NOTICKET-token-refresh-loop`, `[NOTICKET]` commit prefixes,
-`docs/tickets/NOTICKET/`) and say so in the PR body. Rename the branch and directory and
-amend the prefixes once the key exists, before the PR is marked ready. "Unreachable" is not a state you can judge from a
+`docs/tickets/NOTICKET/`) and say so in the PR body.
+
+**Once the key exists, do not rename the branch or amend the commits.** By then the branch
+is pushed, the PR is open and the back-merge may be cut from it: amending prefixes needs a
+force-push, which `pr-create`, the conventions and `fix-review` all forbid on a pushed
+branch, and renaming by push-and-delete closes the open PR. Instead:
+
+- Put the real key in the **title and body of both PRs**. That is what `release`'s
+  back-merge lookup searches, so the back-merge is still found under its `NOTICKET` name.
+- Rename `docs/tickets/NOTICKET/` to the real key in an ordinary commit — a file move
+  needs no force-push.
+- Leave `backmerge/main-to-develop-NOTICKET` alone; `pr-gate`'s back-merge mode says never
+  to rename it. "Unreachable" is not a state you can judge from a
 prompt that has not been answered yet, and a `Bug` + `prod` ticket notifies the team with
 content nobody approved. Ticketing never holds the fix; it also never happens unasked.
 
@@ -170,9 +181,14 @@ If `main` carries the fix as a squash, that merge brings the squashed commit in;
 merge commit, the hotfix's own commits. Either way the content is what shipped. Confirm
 the fix is in the diff rather than assuming the merge did it.
 
-Resolve conflicts with `git merge origin/develop` **on the back-merge branch** — never
-rebase it, because its commits are shared with the hotfix PR and, once merged, with
-`main`. Keep both changes; if the hotfix and `develop` genuinely disagree about the same
+**Conflicts in the merge-up above are a different case.** If the hotfix changed during
+review and was squash-merged, this branch holds the old version of the fix and `main`
+holds the shipped one, so the same lines conflict. `main` wins there — it is what is
+running in production. Do not blend the two versions.
+
+Conflicts with `develop` are the other case: resolve them with `git merge origin/develop`
+**on the back-merge branch** — never rebase it, because its commits are shared with the
+hotfix PR and, once merged, with `main`. Keep both changes; if the hotfix and `develop` genuinely disagree about the same
 code, stop and show the user rather than picking. Merge this PR with a merge commit, not a
 squash, so the next release can match it to its hotfix.
 
