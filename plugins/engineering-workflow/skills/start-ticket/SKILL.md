@@ -70,9 +70,26 @@ Successive PRs tend to touch the same shared files — `package.json`, lockfiles
 — so two branches cut from `develop` conflict the moment one merges. Stacking serialises
 that. Tell the user which base you chose and why.
 
+**Resolve the integration branch first — do not assume `develop` exists.** Most repos in
+the org have no `develop` branch, and `git checkout -b ... origin/develop` fails outright
+there with `fatal: 'origin/develop' is not a commit`:
+
 ```bash
 git fetch origin
-git checkout -b feature/kevin-ENG-115-case-intake-postgres origin/develop   # or origin/<parent-branch>
+if git ls-remote --exit-code --heads origin develop >/dev/null 2>&1; then
+  BASE=develop
+else
+  BASE=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name)   # exempt repo
+fi
+echo "basing on $BASE"
+```
+
+Never create a `develop` branch to make a repo fit the convention, and never improvise a
+base silently — say which one you chose. A stacked branch uses the parent's head instead
+of `$BASE`.
+
+```bash
+git checkout -b feature/kevin-ENG-115-case-intake-postgres "origin/$BASE"   # or origin/<parent-branch>
 ```
 
 ## 4. Write the artifacts

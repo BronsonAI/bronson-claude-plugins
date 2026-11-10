@@ -53,7 +53,8 @@ git merge-base --is-ancestor origin/<candidate> HEAD && echo stacked
 
 Exclude candidates whose head is `develop`, `main` or `backmerge/*`, and those based on
 `main` — a release or back-merge PR is an ancestor of everything and is never your parent.
-A candidate must also have commits that `origin/develop` does not. If several survive,
+A candidate must also have commits that the integration branch does not (`develop`, or
+the default branch in an exempt repo). If several survive,
 take the nearest: the one no other candidate descends from. If that is still ambiguous,
 ask rather than guessing.
 

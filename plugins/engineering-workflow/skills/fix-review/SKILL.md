@@ -112,6 +112,16 @@ gh api repos/<owner/repo>/pulls/<n>/comments/<comment_id>/replies -f body="Fixed
 Say what changed and where, in one or two lines. "Done" is not a reply; `Fixed in a1b2c3d
 — moved the tenant check above the query so the cross-tenant path cannot be reached` is.
 
+**Findings that arrived as top-level comments have no thread to reply in.** A reviewer
+puts them there whenever the line is not in the diff, and they are easy to answer nowhere
+and call the round complete. Answer them in one comment that names each finding:
+
+```bash
+gh pr comment <n> --body-file <path>
+```
+
+They cannot be resolved, so the only record that they were handled is that comment.
+
 Resolve threads you fixed. Leave threads where you pushed back **open** — resolving your
 own disagreement hides it from the reviewer.
 
