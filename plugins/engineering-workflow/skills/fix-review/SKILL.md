@@ -120,22 +120,40 @@ Run `pr-gate` on the PR. On a PR you authored it reports the verdict in the term
 posts nothing — it is a preflight check. On someone else's it asks before submitting, and
 a re-gate posts a new review, because a review's state cannot be changed once submitted.
 
-On `APPROVED`: mark it ready if it is a draft, then re-request **the reviewers who left
-the feedback**, falling back to the team. GitHub does not re-request on a push, so a
-reviewer who left comments is otherwise waiting on nothing.
+On `APPROVED`, mark it ready if it is a draft:
 
 ```bash
-gh pr ready <n>                     # only if it is a draft
-gh pr edit <n> --add-reviewer <the reviewers from step 2>
+gh pr ready <n>
 ```
 
-On `CHANGES REQUESTED`: do not re-request anyone. Report what is still open and stop. If
-the PR was marked ready earlier in this run, offer `gh pr ready <n> --undo`.
+On `CHANGES REQUESTED`, leave it as it is and say what is still open. If the PR was
+marked ready earlier in this run, offer `gh pr ready <n> --undo`.
 
-Re-requesting a human reviewer is worth doing explicitly — GitHub does not re-request on
-a new push, so a review sits silently done-with until someone asks again.
+## 7. Re-request the reviewer — always
 
-## 7. Report back
+**This step is not optional and does not depend on the gate verdict.** Re-request every
+reviewer who left feedback, from step 2:
+
+```bash
+gh pr edit <n> --add-reviewer <each reviewer from step 2>
+```
+
+GitHub does not re-request on a push. A reviewer who left comments sees their review as
+done and will not look again until they are asked, so a run that fixes everything and
+skips this leaves the PR sitting exactly where it was, with nobody waiting on anything.
+
+It runs even when you fixed nothing and pushed back on all of it — then it matters more,
+because the reviewer has to answer the push-back before the PR can move. It runs on a
+`CHANGES REQUESTED` gate too: your own gate's opinion is not what the reviewer is waiting
+on. The only reason to skip it is the user telling you to.
+
+Check it landed rather than assuming:
+
+```bash
+gh pr view <n> --json reviewRequests --jq '[.reviewRequests[].login]'
+```
+
+## 8. Report back
 
 Per item: what it was, what you did, where. Then the new gate verdict. Call out anything
 you pushed back on and anything deferred to a follow-up ticket — those are the two things
