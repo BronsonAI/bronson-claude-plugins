@@ -85,7 +85,7 @@ The body must state:
 - How it was verified.
 - Whether any data needs repair after the fix deploys.
 
-Then run `pr-gate`. On `PASS` or `PASS WITH NOTES`:
+Then run `pr-gate`. On `APPROVED`:
 
 ```bash
 gh pr ready <n>

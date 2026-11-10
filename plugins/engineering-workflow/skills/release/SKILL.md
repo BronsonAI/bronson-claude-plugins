@@ -108,7 +108,7 @@ Not a draft — a release PR has nothing to iterate on, and leaving it draft sto
 required checks from mattering.
 
 Run `pr-gate` on it. For a release PR the gate is narrower than for a feature PR: the code
-was already gated on the way into `develop`. What matters here is the P1 pass over the
+was already gated on the way into `develop`. What matters here is the blocking pass over the
 combined diff, the migration and config flags from step 3, and whether `main` is behind.
 
 Then:

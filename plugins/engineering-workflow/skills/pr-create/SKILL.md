@@ -91,8 +91,8 @@ Run `pr-gate` against the new PR number. Then:
 
 | Verdict | Action |
 |---|---|
-| `PASS` / `PASS WITH NOTES` | Continue to step 6 |
-| `CHANGES REQUESTED` / `BLOCK` | **Leave it as a draft.** Report the findings and offer `fix-review`. Do not request a reviewer. |
+| `APPROVED` | Continue to step 6 |
+| `CHANGES REQUESTED` | **Leave it as a draft.** Report the findings and offer `fix-review`. Do not request a reviewer. |
 
 If required checks are still running, wait for them rather than promoting the PR on a
 partial verdict. Say that you are waiting.

@@ -110,7 +110,7 @@ gh api graphql -f query='mutation($id:ID!) {
 Run `pr-gate` on the PR. It replaces its earlier verdict comment in place rather than
 stacking a new one.
 
-If the PR went back to draft, and the new verdict is `PASS` or `PASS WITH NOTES`, mark it
+If the PR went back to draft, and the new verdict is `APPROVED`, mark it
 ready and re-request review:
 
 ```bash
