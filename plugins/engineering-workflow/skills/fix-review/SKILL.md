@@ -28,13 +28,15 @@ Three separate sources, and missing one is how a comment gets dropped:
 gh pr view <n> --json reviews
 
 # Inline comments on the diff
-gh api repos/<owner/repo>/pulls/<n>/comments --jq '.[] | {id, path, line, user: .user.login, body}'
+gh api --paginate repos/<owner/repo>/pulls/<n>/comments --jq '.[] | {id, in_reply_to_id, path, line, user: .user.login, body}'
 
 # Top-level conversation, including pr-gate verdicts
-gh api repos/<owner/repo>/issues/<n>/comments --jq '.[] | {id, user: .user.login, body}'
+gh api --paginate repos/<owner/repo>/issues/<n>/comments --jq '.[] | {id, user: .user.login, body}'
 ```
 
-For thread state and resolution you need GraphQL:
+For thread state and resolution you need GraphQL. Ask for `databaseId` on the comments:
+the REST reply endpoint needs it, and without it there is no way to get from a thread back
+to the comment you must reply to.
 
 ```bash
 gh api graphql -f query='
@@ -43,7 +45,7 @@ query($owner:String!, $repo:String!, $number:Int!) {
     pullRequest(number:$number) {
       reviewThreads(first:100) {
         nodes { id isResolved isOutdated path line
-          comments(first:20) { nodes { author { login } body } } }
+          comments(first:20) { nodes { databaseId author { login } body } } }
       }
     }
   }
@@ -63,8 +65,14 @@ List every item with what you intend to do, and group them. Three outcomes only:
 - **Out of scope** — a real issue, but not this ticket's. Offer to open a follow-up Linear
   ticket, and say so in the reply rather than just leaving it.
 
-If more than a couple of items are "push back", show the user the triage before replying.
-Disagreeing with a reviewer on their behalf is not yours to do unilaterally.
+**Always show the user the triage before posting anything.** Not just the push-backs —
+the whole list, grouped, one line each. Replies go out under the user's name, and a reply
+that concedes or disputes a point on their behalf is theirs to approve. There is no
+volume threshold: three items get the same treatment as thirty.
+
+Do not escalate what is already decided. A convention the user chose is not an open
+question because a reviewer dislikes it — push back on their behalf and say why. Bring
+them only what genuinely turns on their judgement.
 
 ## 4. Apply the fixes
 
@@ -90,6 +98,7 @@ reviewer re-checking it manually.
 
 ```bash
 # reply in an inline thread
+# <comment_id> is the databaseId of the thread's FIRST comment, not the thread id
 gh api repos/<owner/repo>/pulls/<n>/comments/<comment_id>/replies -f body="Fixed in <sha> — ..."
 ```
 
@@ -107,16 +116,21 @@ gh api graphql -f query='mutation($id:ID!) {
 
 ## 6. Re-gate
 
-Run `pr-gate` on the PR. It replaces its earlier verdict comment in place rather than
-stacking a new one.
+Run `pr-gate` on the PR. On a PR you authored it edits its earlier verdict comment in
+place; on someone else's it posts a new review, because a review body cannot change an
+earlier review's state.
 
-If the PR went back to draft, and the new verdict is `APPROVED`, mark it
-ready and re-request review:
+On `APPROVED`: mark it ready if it is a draft, then re-request **the reviewers who left
+the feedback**, falling back to the team. GitHub does not re-request on a push, so a
+reviewer who left comments is otherwise waiting on nothing.
 
 ```bash
-gh pr ready <n>
-gh pr edit <n> --add-reviewer BronsonAI/engineering
+gh pr ready <n>                     # only if it is a draft
+gh pr edit <n> --add-reviewer <the reviewers from step 2>
 ```
+
+On `CHANGES REQUESTED`: do not re-request anyone. Report what is still open and stop. If
+the PR was marked ready earlier in this run, offer `gh pr ready <n> --undo`.
 
 Re-requesting a human reviewer is worth doing explicitly — GitHub does not re-request on
 a new push, so a review sits silently done-with until someone asks again.

@@ -20,6 +20,8 @@ gh pr list --repo <owner/repo> --state open --json number,title,author,headRefNa
 ```
 
 - Nothing given and the current branch has a PR → that one: `gh pr view --json number`.
+- Nothing given and the current branch has no PR → show the open PR list and ask which to
+  gate. Never gate every open PR without an explicit "all" request.
 - "all my open PRs" → `gh pr list --author @me --state open`.
 - An `ENG-###` key → match it against open PR head branch names.
 - Several targets → gate each independently, then report one summary table to the user.
@@ -40,10 +42,20 @@ Then:
   issue — it is the scope of record. If the PR references no ticket, that is a finding.
 - **The committed artifacts.** Read `docs/tickets/{KEY}/plan.md` and `spec.md` on the
   branch if present. `plan.md` is what the diff gets checked against.
-- **Checks still running.** Do not gate on a pending suite. Report the pending checks and
-  either wait for them or say plainly that the verdict excludes CI.
+- **Checks still running.** `gh pr checks <n> --required --watch` (exit code 8 means
+  still pending). Never approve on a pending suite: either wait, or post the verdict with
+  `--comment` marked "provisional, CI pending". Only a *required* check counts as
+  blocking — an optional job going red is a note.
 
 Read the actual diff. Never infer what a PR does from its title or body.
+
+**Modes.** Three kinds of PR are not feature PRs, and the convention checks do not apply:
+
+| PR | How to tell | What to run |
+|---|---|---|
+| Release | head `develop`, base `main` | Blocking pass only, plus the migration and config flags and whether `main` is behind. Skip branch name, ticket, artifacts, commit prefixes — merge commits and unkeyed commits are expected. |
+| Back-merge | head `backmerge/*`, base `develop` | Blocking pass only. Base `develop` is correct here. Never rename the branch or rewrite its commits: they came from `main`. |
+| Exempt repo | no `develop` branch | Base is the default branch, and that is correct. Skip the base-branch check entirely. |
 
 ## 3. The review passes
 
@@ -66,7 +78,10 @@ category: the question is always "if this merges as is, what goes wrong?"
 - Tenant or case isolation broken: a query that can read across tenants.
 - Breaking a published interface without a version bump or migration path.
 - A required status check failing.
-- Wrong base branch, or `destructive` label with no snapshot step.
+- Wrong base branch for the repo's flow (see Modes), or a `destructive` ticket with no
+  snapshot step. `prod` and `destructive` are **Linear** labels, read from the ticket in
+  step 2 — not GitHub PR labels, which nothing sets. If the ticket could not be read, say
+  the check is unverified rather than passing it.
 - Work the ticket does not ask for that carries its own risk — a second migration, a new
   endpoint, a dependency bump. Name it.
 
@@ -118,9 +133,20 @@ look for an existing comment carrying it and edit that one in place rather than 
 a second verdict:
 
 ```bash
-gh api repos/<owner/repo>/issues/<n>/comments --jq '.[] | select(.body | contains("<!-- bronson-pr-gate -->")) | .id'
+ME=$(gh api user --jq .login)
+gh api --paginate repos/<owner/repo>/issues/<n>/comments   --jq ".[] | select(.user.login == \"$ME\" and (.body | contains(\"<!-- bronson-pr-gate -->\"))) | .id"
 gh api -X PATCH repos/<owner/repo>/issues/comments/<id> -F body=@<path>
 ```
+
+Filter by your own login: another gate run, by a teammate or an agent, carries the same
+marker, and overwriting it destroys their verdict. Paginate — on a busy PR the verdict is
+not on the first page.
+
+**On someone else's PR you cannot replace a verdict.** A review's state is fixed once
+submitted, so a re-gate posts a *new* review. If your previous verdict was
+`CHANGES REQUESTED` and the new one is `APPROVED`, submitting the approval is what
+unblocks the PR; the old review stays in the timeline and that is expected. Do not try to
+PATCH it into something else.
 
 ## 6. Verdict format
 
