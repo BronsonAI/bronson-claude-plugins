@@ -5,8 +5,9 @@ description: Open a pull request as a draft, gate it with pr-gate, then mark it 
 
 # pr-create
 
-Opens the PR as a draft, runs `pr-gate` against it, and only promotes it to ready once
-the verdict allows. A PR never reaches a human reviewer without having been gated first.
+Gates the work **before** opening anything, fixes what blocks, then opens the PR as a
+draft and promotes it to ready once its checks pass. A PR is never opened, and never
+reaches a human reviewer, carrying a blocking finding.
 
 **This skill is a chain of outward-facing actions** — it pushes a branch, opens a PR,
 marks it ready, pings the engineering team and moves a Linear ticket. Finishing a piece of
@@ -93,25 +94,37 @@ If the ticket carries `prod`, the body must state a downtime line. If it carries
 `destructive`, it must state the snapshot taken. Those are Linear's own rules for those
 labels, and `pr-gate` fails the PR without them.
 
-## 4. Open it as a draft
+## 4. Gate the branch before creating anything
+
+Run `pr-gate` in branch mode against `origin/<base>...HEAD`. **A PR is not opened on a
+`CHANGES REQUESTED` verdict.**
+
+| Verdict | Action |
+|---|---|
+| `APPROVED` | Open the PR (step 5) |
+| `CHANGES REQUESTED` | Fix the blocking findings, commit, gate again. Loop until nothing blocks. |
+
+Fix them here rather than opening the PR and leaving it parked as a draft. A PR that
+exists is a thing teammates see, subscribe to and get notified about; one opened in a
+state its own gate rejects is noise that someone else has to work out the status of. The
+non-blocking findings come with you into the PR body — they are notes for the reviewer,
+not reasons to stop.
+
+If a blocking finding is one you intend to argue with rather than fix, stop and put it to
+the user. Do not open the PR on the strength of your own disagreement with the gate.
+
+## 5. Open it as a draft
 
 ```bash
 gh pr create --draft --base <base> --title "<title>" --body-file <path>
 ```
 
-Always `--draft` first, even when you are confident. The draft is what gives the gate
-somewhere to post before a human is pulled in.
+Always `--draft` first, even on a clean gate. The draft is what lets required checks run
+before a human is pulled in.
 
-## 5. Gate it
+## 5b. Gate the checks
 
-Run `pr-gate` against the new PR number. Then:
-
-| Verdict | Action |
-|---|---|
-| `APPROVED` | Continue to step 6 |
-| `CHANGES REQUESTED` | **Leave it as a draft.** Report the findings and offer `fix-review`. Do not request a reviewer. |
-
-If required checks are still running, wait rather than promoting on a partial verdict:
+The branch gate in step 4 could not see CI — no PR existed. Now it does:
 
 ```bash
 gh pr checks <n> --required --watch
@@ -121,9 +134,9 @@ Exit code 8 means still pending. If no check has started after a couple of minut
 so — on some repos CI does not run until the PR is marked ready, and waiting for it on a
 draft hangs for ever.
 
-**On a failed gate, steps 6 and 7 do not run.** The PR stays a draft, the Linear ticket
-stays `In Progress`, and you go to step 8 to report. The ticket moves to `In Review` only
-once the PR is actually marked ready.
+**A required check failing is blocking.** The PR stays a draft, the Linear ticket stays
+`In Progress`, and you go to step 8 to report. The ticket moves to `In Review` only once
+the PR is actually marked ready.
 
 ## 6. Mark ready and request review
 

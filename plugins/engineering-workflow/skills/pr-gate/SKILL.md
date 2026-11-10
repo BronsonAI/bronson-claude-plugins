@@ -25,6 +25,8 @@ gh pr list --repo <owner/repo> --state open --json number,title,author,headRefNa
 - "all my open PRs" → `gh pr list --author @me --state open`.
 - An `ENG-###` key → match it against open PR head branch names.
 - Several targets → gate each independently, then report one summary table to the user.
+- **A branch with no PR yet**, when `pr-create` calls the gate before creating one → gate
+  the branch. Everything below works the same; only the evidence commands change.
 
 ## 2. Gather the evidence
 
@@ -35,6 +37,18 @@ gh pr view <n> --json number,title,body,author,headRefName,baseRefName,isDraft,a
 gh pr diff <n>
 gh pr checks <n>
 ```
+
+On a branch with no PR, read the same diff from git and take the ticket from the branch
+name and the commits instead of a PR body:
+
+```bash
+git fetch origin
+git diff origin/<base>...HEAD
+git log --oneline origin/<base>..HEAD
+```
+
+Required checks cannot run before the PR exists. Say so, run every other pass, and leave
+the check verdict to the gate that runs after the draft is opened.
 
 Then:
 
