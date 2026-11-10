@@ -9,21 +9,35 @@ record of how, and what to change if it ever moves.
 
 ```json
 {
-  "extraKnownMarketplaces": {
-    "bronson-tools": {
-      "source": { "source": "github", "repo": "BronsonAI/bronson-claude-plugins" },
-      "autoUpdate": true
-    }
-  },
   "enabledPlugins": {
     "engineering-workflow@bronson-tools": true
   },
+  "extraKnownMarketplaces": {
+    "bronson-tools": {
+      "autoUpdate": true,
+      "source": { "repo": "BronsonAI/bronson-claude-plugins", "source": "github" }
+    },
+    "impeccable": {
+      "autoUpdate": false,
+      "source": { "ref": "skill-v4.8.0", "repo": "pbakaus/impeccable", "source": "github" }
+    },
+    "worktrunk": {
+      "autoUpdate": false,
+      "source": { "ref": "v0.81.0", "repo": "max-sixty/worktrunk", "source": "github" }
+    }
+  },
   "strictKnownMarketplaces": [
-    { "source": "github", "repo": "BronsonAI/bronson-claude-plugins" }
+    { "repo": "BronsonAI/bronson-claude-plugins", "source": "github" },
+    { "ref": "skill-v4.8.0", "repo": "pbakaus/impeccable", "source": "github" },
+    { "ref": "v0.81.0", "repo": "max-sixty/worktrunk", "source": "github" }
   ],
   "strictPluginOnlyCustomization": ["mcp"]
 }
 ```
+
+Two third-party marketplaces sit alongside ours. Both are pinned to a `ref`, so
+`autoUpdate: false` is right for them — only `bronson-tools` tracks a moving `main` and
+needs `autoUpdate: true`.
 
 What each key does:
 
