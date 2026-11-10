@@ -10,9 +10,9 @@ anyone installing anything.
 |---|---|
 | `bronson-engineering-workflow` | The conventions the rest build on — Linear, branch naming, the develop/main strategy, commits, artifacts, docs placement, toolchain |
 | `start-ticket` | Reads a Linear ticket, cuts the branch, writes intent/spec/plan, stops at the plan-approval gate |
-| `pr-create` | Opens a draft PR, gates it, then marks it ready and requests `BronsonAI/engineering` |
-| `pr-gate` | Reviews one or more PRs against the review policy and posts the verdict |
-| `fix-review` | Applies review feedback, replies to each thread, re-gates |
+| `pr-create` | Gates the branch and fixes what blocks, opens a draft PR, then marks it ready and requests `BronsonAI/engineering` |
+| `pr-gate` | Reviews a PR, or a branch before its PR exists, against the review policy. Preflight on your own PR; asks before reviewing someone else's |
+| `fix-review` | Triages review feedback, applies it, replies to each thread, re-gates, re-requests the reviewer |
 | `hotfix` | Branches from `main`, ships the fix, opens the back-merge PR down to `develop` |
 | `release` | Builds the changelog and opens the `develop` to `main` promotion PR |
 | `check-accessibility` | WCAG 2.2 AA audit across automated, static and manual passes, then fixes what is safe to fix |
@@ -29,7 +29,7 @@ Linear ticket
    │  start-ticket      branch + docs/tickets/{KEY}/{intent,spec,plan}.md
    ▼                    ── human gate: plan approved ──
 {type}/{first-name}-{KEY}-{description}
-   │  pr-create         draft PR ▸ pr-gate ▸ ready ▸ request engineering
+   │  pr-create         pr-gate ▸ draft PR ▸ checks ▸ ready ▸ request engineering
    │  fix-review        feedback ▸ fixes ▸ replies ▸ re-gate
    ▼
 develop ──▶ dev env
@@ -38,6 +38,14 @@ develop ──▶ dev env
 main ──▶ prod env
    ▲  hotfix            main ▸ fix ▸ PR to main ▸ back-merge PR to develop
 ```
+
+**Two branching models.** The diagram above is the `develop` → `main` flow, which applies
+to every actively developed repo unless it is explicitly exempt. Exempt today:
+`infra-live` and `infra-modules`, which are `main`-only — there, branches base on the
+default branch, PRs target it, and `release` and the `hotfix` back-merge do not apply. The
+skills detect which model a repo uses (`git ls-remote --heads origin develop`) rather than
+assuming; none of them creates a `develop` branch to make a repo fit. A repo's own
+`CLAUDE.md` wins over all of this, including on what a merge deploys.
 
 Artifacts are committed to the branch rather than kept in Linear, so a reviewer reads
 intent, spec and plan in the PR diff and the trail survives in git history for audit. The

@@ -1,6 +1,6 @@
 ---
 name: hotfix
-description: Ship an urgent production fix — branch from main, fix, gate, PR into main, then open the back-merge PR down to develop so the fix is not lost. Use when production is broken, when asked for a hotfix or emergency fix, or when a fix must bypass the normal develop promotion.
+description: Ship an urgent production fix — branch from main, fix, gate the branch, PR into main, then open the back-merge PR down to develop so the fix is not lost. Does not merge the production PR. Use when production is broken, when asked for a hotfix or emergency fix, or when a fix must bypass the normal develop promotion.
 ---
 
 # hotfix

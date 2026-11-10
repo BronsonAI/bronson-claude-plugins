@@ -1,6 +1,6 @@
 ---
 name: pr-create
-description: Open a pull request as a draft, gate it with pr-gate, then mark it ready and request the engineering team as reviewer. Use when explicitly asked to open, raise or create a PR, or to put work up for review. Not triggered by work merely being finished.
+description: Gate the branch with pr-gate and fix what blocks, then open the pull request as a draft and mark it ready once its checks pass, requesting the engineering team as reviewer. Use when explicitly asked to open, raise or create a PR, or to put work up for review. Not triggered by work merely being finished.
 ---
 
 # pr-create

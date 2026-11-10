@@ -1,6 +1,6 @@
 ---
 name: fix-review
-description: Act on review feedback for an open pull request — read every review comment and thread, apply the fixes, reply to each thread, push, and re-run pr-gate. Use when asked to address review comments, respond to feedback, fix review findings, or resolve a reviewer's notes on a PR.
+description: Act on review feedback for an open pull request — read every comment and thread, show the triage, apply the fixes, reply to each thread, push, re-gate, and re-request the reviewer. Use when asked to address review comments, respond to feedback, fix review findings, or resolve a reviewer's notes on a PR.
 ---
 
 # fix-review

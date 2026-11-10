@@ -1,6 +1,6 @@
 ---
 name: pr-gate
-description: Review one or more GitHub pull requests against the Bronson review policy and post the verdict to each PR. Use when asked to review, gate, check or sign off a PR, to review all open PRs, or before marking a draft ready. Also invoked by pr-create, fix-review, hotfix and release.
+description: Review one or more GitHub pull requests, or a branch before its PR exists, against the Bronson review policy. Reports the verdict; on your own PR it posts nothing, and on someone else's it asks before submitting a review. Use when asked to review, gate, check or sign off a PR, to review all open PRs, or before opening or promoting one. Also invoked by pr-create, fix-review, hotfix and release.
 ---
 
 # pr-gate
