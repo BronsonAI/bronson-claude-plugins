@@ -34,8 +34,10 @@ ticket, say so rather than silently widening the work.
 
 - `type` — `feature`, `fix`, `improvement` or `hotfix`, from the ticket's type label
   (`Bug` becomes `fix`). `hotfix` overrides the label: a `Bug` shipped through `hotfix`
-  is `hotfix/`, not `fix/`. For work with no ticket — a chore, CI, docs — use `chore`,
-  `ci` or `docs` and drop the `{KEY}` segment.
+  is `hotfix/`, not `fix/`. For work that will never have a ticket — a chore, CI, docs —
+  use `chore`, `ci` or `docs` and drop the `{KEY}` segment. That is different from work
+  whose ticket does not exist *yet*: a hotfix shipped before its ticket is confirmed uses
+  `NOTICKET` in the key's place and is renamed once the key exists (`hotfix` step 2).
 - `first-name` — the author's first name, lowercase. Not a username.
 - `KEY` — the Linear key, uppercase, matching the commit prefix and the artifact
   directory so all three read the same.

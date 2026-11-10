@@ -19,14 +19,17 @@ Accept PR numbers, URLs, `ENG-###` keys, or nothing at all.
 gh pr list --repo <owner/repo> --state open --json number,title,author,headRefName,baseRefName,isDraft
 ```
 
+- A branch named by the caller — `pr-create` step 4 or `hotfix` step 6, before any PR
+  exists → **branch mode**. Everything below works the same; only the evidence commands
+  change.
 - Nothing given and the current branch has a PR → that one: `gh pr view --json number`.
-- Nothing given and the current branch has no PR → show the open PR list and ask which to
-  gate. Never gate every open PR without an explicit "all" request.
+- Nothing given, the current branch has no PR, and the user asked to gate *this branch* →
+  branch mode on it.
+- Nothing given and none of the above → show the open PR list and ask which to gate.
+  Never gate every open PR without an explicit "all" request.
 - "all my open PRs" → `gh pr list --author @me --state open`.
 - An `ENG-###` key → match it against open PR head branch names.
 - Several targets → gate each independently, then report one summary table to the user.
-- **A branch with no PR yet**, when `pr-create` calls the gate before creating one → gate
-  the branch. Everything below works the same; only the evidence commands change.
 
 ## 2. Gather the evidence
 
@@ -39,13 +42,26 @@ gh pr checks <n>
 ```
 
 On a branch with no PR, read the same diff from git and take the ticket from the branch
-name and the commits instead of a PR body:
+name and the commits instead of a PR body.
+
+**Establish `<base>` first** — the base-branch check below is blocking, so the gate cannot
+judge it without knowing what the branch is meant to target. Take it from the caller when
+there is one (`pr-create` picked it in its step 2, `hotfix` targets `main`). Otherwise
+resolve the integration branch and say which you assumed:
 
 ```bash
 git fetch origin
-git diff origin/<base>...HEAD
-git log --oneline origin/<base>..HEAD
+BASE=$(git ls-remote --exit-code --heads origin develop >/dev/null 2>&1 \
+  && echo develop \
+  || gh repo view --json defaultBranchRef --jq .defaultBranchRef.name)
+
+git diff "origin/$BASE"...HEAD
+git log --oneline "origin/$BASE"..HEAD
 ```
+
+A stacked branch's base is its parent, not the integration branch — if the caller did not
+say, ask rather than diffing against the wrong thing and reporting the parent's work as
+this branch's.
 
 Required checks cannot run before the PR exists. Say so, run every other pass, and leave
 the check verdict to the gate that runs after the draft is opened.

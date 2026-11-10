@@ -32,7 +32,7 @@ gh pr list --base main --head develop --state open
 ## 2. Work out what is shipping
 
 ```bash
-gh api repos/<owner/repo>/compare/main...develop --jq '{ahead: .ahead_by, behind: .behind_by, commits: [.commits[] | {sha: .sha[0:7], message: (.commit.message | split("\n")[0]), author: .commit.author.name}]}'
+gh api repos/<owner/repo>/compare/main...develop --jq '{ahead: .ahead_by, commits: [.commits[] | {sha: .sha[0:7], message: (.commit.message | split("\n")[0]), author: .commit.author.name}]}'
 ```
 
 - `ahead_by` of 0 → nothing to ship. Say so and stop.
