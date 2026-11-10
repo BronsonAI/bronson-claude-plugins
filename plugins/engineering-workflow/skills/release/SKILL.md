@@ -36,9 +36,22 @@ gh api repos/<owner/repo>/compare/main...develop --jq '{ahead: .ahead_by, behind
 ```
 
 - `ahead_by` of 0 → nothing to ship. Say so and stop.
-- `behind_by` above 0 → `main` has commits `develop` does not, which means a hotfix was
-  never back-merged. **Stop and fix that first** with a back-merge PR, or the promotion
-  will revert it.
+- `behind_by` above 0 is **not** evidence of an un-back-merged hotfix. Every past
+  promotion leaves a commit on `main` that `develop` lacks, and in a squash-only repo it
+  stays that way for good. Check for *content* on `main` that `develop` lacks instead:
+
+```bash
+git fetch origin
+git log --no-merges --cherry-pick --right-only origin/develop...origin/main
+```
+
+  Empty → nothing outstanding, whatever `behind_by` says. Non-empty → look at what those
+  commits are; only a real hotfix needs a back-merge first. Merging `develop` into `main`
+  is a three-way merge and does not by itself revert a `main`-only commit.
+
+The compare API caps at 250 commits and 300 files; past that it truncates silently. Use
+`git log origin/main..origin/develop` for the commit list and say so explicitly if either
+cap is near.
 
 Pull the `ENG-###` keys out of the commit messages and read those tickets for their titles
 and type labels. A commit with no key still ships — list it under its raw message rather
@@ -57,7 +70,7 @@ Before writing anything, check the shipping set for:
   breaks production.
 
 ```bash
-gh api repos/<owner/repo>/compare/main...develop --jq '.files[].filename' | grep -iE 'migration|schema|\.env|secret|config'
+git diff --name-only origin/main...origin/develop | grep -iE 'migration|schema|seed|\.env|secret|config|terraform|\.tf$'
 ```
 
 ## 4. Write the release PR
@@ -104,18 +117,23 @@ is clear you checked rather than skipped it.
 gh pr create --base main --head develop --title "<title>" --body-file <path>
 ```
 
-Not a draft — a release PR has nothing to iterate on, and leaving it draft stops the
-required checks from mattering.
+Not a draft — a release PR has nothing to iterate on. (Required checks do run on a
+draft; a draft simply cannot be merged. The reason to skip draft here is that there is no
+iteration step to protect, not that CI would be skipped.)
 
 Run `pr-gate` on it. For a release PR the gate is narrower than for a feature PR: the code
 was already gated on the way into `develop`. What matters here is the blocking pass over the
 combined diff, the migration and config flags from step 3, and whether `main` is behind.
 
-Then:
+Then, **only on `APPROVED`**:
 
 ```bash
 gh pr edit <n> --add-reviewer BronsonAI/engineering
 ```
+
+On `CHANGES REQUESTED`, do not request a reviewer. Report the blocking findings and stop:
+a production PR carrying a known blocker is the one place a reviewer's rubber stamp costs
+the most.
 
 ## 6. Hand it over
 
@@ -128,9 +146,17 @@ Say explicitly that merging deploys to production and that you have not merged i
 
 Only once the user confirms the merge:
 
-- Move every shipped Linear ticket to `Done`.
-- Check that CI/CD actually deployed: `gh run list --branch main --limit 3`. A merged
-  release PR with a failed deploy workflow is worse than an unmerged one, because
-  everyone assumes it shipped.
-- Report the deploy run's result. Do not report a release as shipped on the strength of
-  the merge alone.
+Verify the deploy **before** touching Linear — a ticket moved to `Done` on a failed
+deploy is a lie that nobody re-checks.
+
+```bash
+SHA=$(gh pr view <n> --json mergeCommit --jq .mergeCommit.oid)
+gh run list --commit "$SHA" --limit 5
+```
+
+- Tie the check to the merge commit, not to `--branch main`, which happily returns an
+  older run. No run found for that SHA → not verified; say so and stop.
+- Once the deploy run has finished green, show the user the list of tickets you are about
+  to close and move only the ones they confirm. Skip any ticket that still has an open PR.
+- Report the deploy run's result. Never report a release as shipped on the strength of the
+  merge alone.

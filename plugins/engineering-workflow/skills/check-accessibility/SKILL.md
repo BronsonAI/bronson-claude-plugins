@@ -26,10 +26,17 @@ rather than running React tooling against a Streamlit app.
 
 ## 2. Automated pass — axe-core
 
-Against a running app, through Playwright if the repo already has it:
+Against a running app, through Playwright **if the repo already has it** — check for
+`@playwright/test` before reaching for axe at all; standing Playwright up from nothing is
+its own project, not part of an audit.
+
+Adding a dev dependency is the user's call. Ask first, use the package manager the
+lockfile names (`pnpm-lock.yaml` → `pnpm`, `yarn.lock` → `yarn`, otherwise `npm`), and say
+whether you will keep the dependency or revert it when the audit is done. If install
+scripts need approving, approve the named packages only — never `--all`.
 
 ```bash
-npm i -D @axe-core/playwright
+pnpm add -D @axe-core/playwright   # or npm i -D / yarn add -D, per the lockfile
 ```
 
 ```ts
@@ -61,11 +68,16 @@ No Playwright and no appetite to add it → run axe against built static output 
 ## 3. Static pass — JSX
 
 ```bash
-npm i -D eslint-plugin-jsx-a11y
+pnpm add -D eslint-plugin-jsx-a11y   # per the lockfile; ask first
 ```
 
-**Wire it into the repo's existing ESLint config** rather than invoking it standalone.
-Flat config (ESLint 9, what current repos use):
+**Default to a throwaway config for the run** and leave the repo's ESLint config alone.
+Adding these rules to the shared config makes them run in CI, which turns an audit into a
+blocking check for everyone — the opposite of what this skill is allowed to do.
+
+Only edit the shared config if the user asks for it, and then at `warn`, or scoped to the
+paths that changed, after checking whether CI runs lint. The flat config below (ESLint 9,
+what current repos use) is the shape for either case:
 
 ```js
 import jsxA11y from 'eslint-plugin-jsx-a11y'
@@ -131,9 +143,15 @@ Walk the scoped UI and check each of these. These are where real barriers live:
 
 **Fix without asking** — these are mechanical and have one correct answer:
 
-- Missing `alt`, `aria-label`, `aria-labelledby`, `aria-describedby`
+- `alt=""` on an image that is clearly decorative. Writing *descriptive* alt text, and
+  any `tabIndex` or focus-order change, goes in "Stop and ask" — only the author knows
+  what the image is for, or what the intended focus order is.
+- Missing `aria-label`, `aria-labelledby`, `aria-describedby` where the accessible name
+  is already in the markup to copy
 - Label-to-control association
-- Semantic element swaps: `div` with `onClick` becomes `button`
+- Semantic element swaps: `div` with `onClick` becomes `button` — always with
+  `type="button"` and a style reset (or MUI's `ButtonBase`). A bare `<button>` inside a
+  form defaults to `type="submit"` and will submit it on click.
 - Heading level corrections and landmark wrapping
 - `aria-sort`, `aria-current`, `aria-expanded`, `aria-live` where the state already exists
 - Contrast fixes that resolve to an existing theme token

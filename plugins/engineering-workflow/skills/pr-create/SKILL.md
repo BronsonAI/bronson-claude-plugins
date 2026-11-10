@@ -14,10 +14,14 @@ Stop and fix before opening anything:
 
 - **Not on `main`, `develop` or `staging`.** If the work is sitting on one of those,
   stop — the change needs a branch. Do not open a PR from a protected branch.
-- **Working tree clean.** Uncommitted changes belong in a commit first, with the
-  `[ENG-###]` prefix.
+- **Working tree clean.** Show `git status --short` — tracked changes *and* untracked
+  files — and ask which belong to this ticket. Commit only those, with the `[ENG-###]`
+  prefix. Never `git add -A`: scratch files, local config and secrets live in exactly the
+  untracked set that a blind add would sweep in.
 - **Branch name matches** `{type}/{first-name}-{KEY}-{description}`. If it does not and
-  the branch has not been pushed, rename it: `git branch -m <correct-name>`.
+  the branch has not been pushed, offer to rename it: `git branch -m <correct-name>`.
+  Already pushed, or the repo has its own convention → leave it and say so in the report.
+  Never rename and force-push a branch to satisfy the format.
 - **Branch pushed:** `git push -u origin <branch>`.
 - **CI expectations known:** check whether required checks exist on the base branch so
   you know what the gate will be waiting on.
@@ -29,9 +33,16 @@ Stop and fix before opening anything:
   branch, base on that branch instead:
 
 ```bash
-gh pr list --author @me --state open --json number,headRefName
+git fetch origin
+gh pr list --author @me --state open --json number,headRefName,baseRefName
 git merge-base --is-ancestor origin/<candidate> HEAD && echo stacked
 ```
+
+Exclude candidates whose head is `develop`, `main` or `backmerge/*`, and those based on
+`main` — a release or back-merge PR is an ancestor of everything and is never your parent.
+A candidate must also have commits that `origin/develop` does not. If several survive,
+take the nearest: the one no other candidate descends from. If that is still ambiguous,
+ask rather than guessing.
 
 - Hotfix → `main`, via the `hotfix` skill.
 - Release → `main` from `develop`, via the `release` skill.
@@ -94,8 +105,19 @@ Run `pr-gate` against the new PR number. Then:
 | `APPROVED` | Continue to step 6 |
 | `CHANGES REQUESTED` | **Leave it as a draft.** Report the findings and offer `fix-review`. Do not request a reviewer. |
 
-If required checks are still running, wait for them rather than promoting the PR on a
-partial verdict. Say that you are waiting.
+If required checks are still running, wait rather than promoting on a partial verdict:
+
+```bash
+gh pr checks <n> --required --watch
+```
+
+Exit code 8 means still pending. If no check has started after a couple of minutes, say
+so — on some repos CI does not run until the PR is marked ready, and waiting for it on a
+draft hangs for ever.
+
+**On a failed gate, steps 6 and 7 do not run.** The PR stays a draft, the Linear ticket
+stays `In Progress`, and you go to step 8 to report. The ticket moves to `In Review` only
+once the PR is actually marked ready.
 
 ## 6. Mark ready and request review
 

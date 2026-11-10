@@ -156,8 +156,17 @@ now rather than picking an answer.
 
 ## 6. Move the ticket
 
-Set the Linear issue to `In Progress` and assign it to the user if it is unassigned.
-If open questions are blocking, set `Blocked` instead and say why in a comment.
+**After the approval in step 5, not before.** This is bookkeeping that announces to the
+team that work has started, so it waits for the gate like everything else.
+
+Read the issue's current status and assignee first. Then:
+
+- Unassigned → assign it to the user. Already assigned to someone else → leave it and say so.
+- `Todo` or `Backlog` → set `In Progress`.
+- Any other status, or a reassignment → confirm with the user before changing it. Someone
+  moved it there deliberately.
+- Blocking open questions → `Blocked` instead, with a comment saying why. Show the comment
+  before posting it.
 
 ## 7. While building
 

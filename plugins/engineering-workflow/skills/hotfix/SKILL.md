@@ -32,8 +32,10 @@ the normal gates.
   `prod` since it touches production by definition.
 - Set it to `In Progress`.
 
-If production is actively down, create the ticket and keep moving — do not let ticketing
-hold the fix. But do not skip it.
+If production is actively down, still check `list_issues` for an existing ticket, then
+show a one-line draft and take a quick yes — that costs seconds. If the user is
+unreachable, create it, keep moving, and tell them the key as soon as they are back. Do
+not let ticketing hold the fix, and do not skip it.
 
 ## 3. Branch from main
 
@@ -110,15 +112,22 @@ git push -u origin backmerge/main-to-develop-ENG-221
 gh pr create --base develop --title "Back-merge ENG-221 hotfix into develop" --body-file <path>
 ```
 
-Branch off `main` and PR into `develop` rather than opening `main` into `develop`
-directly — a direct PR between the two long-lived branches is awkward to resolve and
-tends to drag unrelated history with it.
+Branch off `main` rather than opening `main` into `develop` directly: a separate branch
+lets you resolve conflicts without pushing to `develop`.
 
-Conflicts here are normal when `develop` has moved. Resolve in favour of keeping both
-changes; if the hotfix and `develop` genuinely disagree about the same code, stop and
-show the user rather than picking.
+Resolve conflicts with `git merge origin/develop` **on the back-merge branch** — never
+rebase it, because its commits are already on `main`. Keep both changes; if the hotfix and
+`develop` genuinely disagree about the same code, stop and show the user rather than
+picking. Merge this PR with a merge commit, not a squash: a squash leaves `main`'s commits
+outside `develop`'s history and the next release reports a phantom un-back-merged hotfix.
 
-Open the back-merge PR in the same session as the hotfix. Do not leave it for later.
+Gate it like any other PR and put a reviewer on it. It is a real PR, not bookkeeping.
+
+**This skill does not merge the hotfix PR.** Merging to `main` is a production deploy and
+the user does it. Never `gh pr merge --admin`. Open the back-merge PR as soon as the
+hotfix PR is open — it can sit as a draft until the hotfix merges — so that finishing does
+not depend on waiting for a merge you are not going to perform. If the hotfix has not
+merged by the end of the session, say so and leave the back-merge as the named next step.
 
 ## 8. Close out
 
