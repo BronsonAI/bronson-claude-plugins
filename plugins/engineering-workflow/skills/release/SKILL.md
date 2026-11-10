@@ -38,16 +38,26 @@ gh api repos/<owner/repo>/compare/main...develop --jq '{ahead: .ahead_by, behind
 - `ahead_by` of 0 → nothing to ship. Say so and stop.
 - `behind_by` above 0 is **not** evidence of an un-back-merged hotfix. Every past
   promotion leaves a commit on `main` that `develop` lacks, and in a squash-only repo it
-  stays that way for good. Check for *content* on `main` that `develop` lacks instead:
+  stays that way for good.
+
+  Commit topology cannot answer this: a squashed promotion commit has one parent, so
+  `--no-merges` keeps it, and its patch-id matches no single `develop` commit, so
+  `--cherry-pick` keeps it too. Any check built on `git log` gives the same false signal
+  `behind_by` does. **Ask about PRs instead**, which is merge-strategy independent:
 
 ```bash
-git fetch origin
-git log --no-merges --cherry-pick --right-only origin/develop...origin/main
+# merged hotfixes into main
+gh pr list --base main --state merged --limit 30 \
+  --json number,headRefName --jq '.[] | select(.headRefName | startswith("hotfix/")) | .headRefName'
+
+# merged back-merges into develop
+gh pr list --base develop --state merged --limit 30 \
+  --json number,headRefName --jq '.[] | select(.headRefName | startswith("backmerge/")) | .headRefName'
 ```
 
-  Empty → nothing outstanding, whatever `behind_by` says. Non-empty → look at what those
-  commits are; only a real hotfix needs a back-merge first. Merging `develop` into `main`
-  is a three-way merge and does not by itself revert a `main`-only commit.
+  A merged `hotfix/*` into `main` with no merged `backmerge/*` carrying the same `ENG-###`
+  is the thing to stop for. Everything else is normal promotion history. Merging `develop`
+  into `main` is a three-way merge and does not by itself revert a `main`-only commit.
 
 The compare API caps at 250 commits and 300 files; past that it truncates silently. Use
 `git log origin/main..origin/develop` for the commit list and say so explicitly if either

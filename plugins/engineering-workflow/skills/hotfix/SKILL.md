@@ -34,8 +34,10 @@ the normal gates.
 
 If production is actively down, still check `list_issues` for an existing ticket, then
 show a one-line draft and take a quick yes — that costs seconds. If the user is
-unreachable, create it, keep moving, and tell them the key as soon as they are back. Do
-not let ticketing hold the fix, and do not skip it.
+unanswered, say in your report that the ticket is still to be created and carry on with
+the fix — do not create it unconfirmed. "Unreachable" is not a state you can judge from a
+prompt that has not been answered yet, and a `Bug` + `prod` ticket notifies the team with
+content nobody approved. Ticketing never holds the fix; it also never happens unasked.
 
 ## 3. Branch from main
 
@@ -100,13 +102,15 @@ The body must state:
 - How it was verified.
 - Whether any data needs repair after the fix deploys.
 
-Then check CI, which the branch gate could not see:
+Then check CI, which the branch gate could not see — see `pr-gate` §2 for reading the
+exit code, because "no checks reported" also exits non-zero and is **not** a failure:
 
 ```bash
-gh pr checks <n> --required --watch
+gh pr checks <n> --required --watch || true
 ```
 
-A required check failing is blocking: leave it a draft and report. Otherwise:
+A required check genuinely *failing* is blocking: leave it a draft and report. A repo
+with no checks configured is not. Otherwise:
 
 ```bash
 gh pr ready <n>
@@ -122,14 +126,21 @@ quietly merging.
 **This is the step that gets forgotten, and skipping it silently reverts the fix** on the
 next `develop` to `main` promotion.
 
-After the hotfix merges to `main`:
+**The branch must contain the fix**, so cut it from the hotfix branch, not from
+`origin/main` — `main` does not have the fix until the hotfix PR merges. Cutting from
+`origin/main` first gives you either `gh pr create` failing with no commits between the
+branches, or a PR whose branch is a pre-fix snapshot that never picks the fix up: it
+merges, the report says the back-merge is done, and `develop` still lacks the fix.
 
 ```bash
 git fetch origin
-git checkout -b backmerge/main-to-develop-ENG-221 origin/main
+git checkout -b backmerge/main-to-develop-ENG-221 hotfix/kevin-ENG-221-token-refresh-loop
 git push -u origin backmerge/main-to-develop-ENG-221
-gh pr create --base develop --title "Back-merge ENG-221 hotfix into develop" --body-file <path>
+gh pr create --draft --base develop --title "Back-merge ENG-221 hotfix into develop" --body-file <path>
 ```
+
+Open it as a draft while the hotfix PR is still open, and mark it ready once the hotfix
+has merged to `main`.
 
 Branch off `main` rather than opening `main` into `develop` directly: a separate branch
 lets you resolve conflicts without pushing to `develop`.

@@ -91,11 +91,33 @@ export default [
 Legacy `.eslintrc`: add `plugin:jsx-a11y/recommended` to `extends`.
 
 For a one-off run that leaves the repo config alone, write a throwaway flat config and
-point at it — do not reach for `--no-eslintrc` or `--rulesdir`, which ESLint 9 removed:
+point at it — do not reach for `--no-eslintrc` or `--rulesdir`, which ESLint 9 removed.
+
+**It needs a TypeScript parser.** With `--no-config-lookup` nothing else supplies one, so
+a config carrying only `jsxA11y.flatConfigs.recommended` reports a parsing error at the
+first type annotation in every `.tsx` file and evaluates no jsx-a11y rules at all — the
+run then reads as clean, or as a pile of errors that are not accessibility findings.
+
+```js
+// tmp-a11y.mjs
+import tseslint from 'typescript-eslint'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
+
+export default [
+  { files: ['**/*.{ts,tsx,js,jsx}'],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    } },
+  jsxA11y.flatConfigs.recommended,
+]
+```
 
 ```bash
-npx eslint --config <tmp-config.mjs> --no-config-lookup <paths>
+npx eslint --config tmp-a11y.mjs --no-config-lookup <paths>
 ```
+
+Check the output is findings rather than parse errors before you report a count.
 
 **Do not add this to CI as a blocking job** unless the user asks. A lint rule that fails
 everyone's build on day one gets disabled within a week.
@@ -156,13 +178,16 @@ Walk the scoped UI and check each of these. These are where real barriers live:
 - `aria-sort`, `aria-current`, `aria-expanded`, `aria-live` where the state already exists
 - Contrast fixes that resolve to an existing theme token
 - `prefers-reduced-motion` guards
-- Removing `tabIndex` above 0
+
 
 **Stop and ask** — these are design or product decisions, not defects to patch:
 
 - Anything needing new visible text: button labels, error copy, instructions
 - Contrast fixes that change brand colours rather than using a token
 - Reordering or restructuring a layout to fix focus order
+- Any `tabIndex` change, including removing a positive one. A `tabIndex={3}` is usually a
+  deliberate order somebody set; report it with what it does, and let the author decide
+- Writing descriptive `alt` text for an image that is not plainly decorative
 - Replacing a component wholesale
 - Anything where the accessible behaviour is genuinely ambiguous
 

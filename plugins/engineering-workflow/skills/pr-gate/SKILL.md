@@ -56,10 +56,18 @@ Then:
   issue — it is the scope of record. If the PR references no ticket, that is a finding.
 - **The committed artifacts.** Read `docs/tickets/{KEY}/plan.md` and `spec.md` on the
   branch if present. `plan.md` is what the diff gets checked against.
-- **Checks still running.** `gh pr checks <n> --required --watch` (exit code 8 means
-  still pending). Never approve on a pending suite: either wait, or post the verdict with
-  `--comment` marked "provisional, CI pending". Only a *required* check counts as
-  blocking — an optional job going red is a note.
+- **Checks still running.** `gh pr checks <n> --required --watch`. Read the exit code
+  carefully, because three different outcomes are non-zero:
+  - **no checks reported** (no CI on the repo, no *required* checks, or the PR was only
+    just created and nothing has registered) — **not a failure.** Say "no required checks"
+    and move on. Never report this as a failing check.
+  - **8** — still pending. Never approve on a pending suite: either wait, or give the
+    verdict marked "provisional, CI pending".
+  - **a check actually failed** — blocking.
+
+  Distinguish them before judging: `gh pr checks <n> --required` with no `--watch` prints
+  "no checks reported" in the first case. Only a *required* check counts as blocking — an
+  optional job going red is a note.
 
 Read the actual diff. Never infer what a PR does from its title or body.
 
@@ -69,6 +77,7 @@ Read the actual diff. Never infer what a PR does from its title or body.
 |---|---|---|
 | Release | head `develop`, base `main` | Blocking pass only, plus the migration and config flags and whether `main` is behind. Skip branch name, ticket, artifacts, commit prefixes — merge commits and unkeyed commits are expected. |
 | Back-merge | head `backmerge/*`, base `develop` | Blocking pass only. Base `develop` is correct here. Never rename the branch or rewrite its commits: they came from `main`. |
+| Hotfix | head `hotfix/*`, base `main` | Base `main` is correct — that is the whole point of a hotfix. Run every other pass; the ticket and the `prod` downtime line matter more here, not less. |
 | Exempt repo | no `develop` branch | Base is the default branch, and that is correct. Skip the base-branch check entirely. |
 
 ## 3. The review passes
@@ -92,10 +101,15 @@ category: the question is always "if this merges as is, what goes wrong?"
 - Tenant or case isolation broken: a query that can read across tenants.
 - Breaking a published interface without a version bump or migration path.
 - A required status check failing.
-- Wrong base branch for the repo's flow (see Modes), or a `destructive` ticket with no
-  snapshot step. `prod` and `destructive` are **Linear** labels, read from the ticket in
-  step 2 — not GitHub PR labels, which nothing sets. If the ticket could not be read, say
-  the check is unverified rather than passing it.
+- Wrong base branch for the repo's flow (see Modes).
+- A `prod` ticket whose PR body states no downtime line, or a `destructive` ticket whose
+  body states no snapshot step. `prod` and `destructive` are **Linear** labels, read from
+  the ticket in step 2 — not GitHub PR labels, which nothing sets. If the ticket could not
+  be read, say the check is unverified rather than passing it.
+
+  This one needs the PR body, so in branch mode (no PR yet) check the body text
+  `pr-create` is about to use, and say which you checked. It is the one blocking finding
+  that a pre-creation gate reads from the draft body rather than the diff.
 - Work the ticket does not ask for that carries its own risk — a second migration, a new
   endpoint, a dependency bump. Name it.
 

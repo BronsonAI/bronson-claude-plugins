@@ -86,13 +86,18 @@ Write "None" if there is none.
 #41 — retarget this PR to `develop` before #41 merges.
 ```
 
-Omit the **Stacked on** section when the base is `develop`. Keep it when stacked, because
-merging a parent *and deleting its branch* closes the child PR, and GitHub then refuses
-both to reopen it and to change its base.
+Omit the **Stacked on** section when the base is `develop`. Keep it when stacked, so the
+reviewer knows the diff includes the parent's commits until the parent merges.
+
+Do **not** retarget the child to `develop` ahead of the parent merging: the child's diff
+would then show all of the parent's unmerged work, and the gate reviews the parent's code
+under the child's ticket. GitHub retargets children itself when the parent merges — see
+the conventions, §3, for the cases that break that and what to do about them.
 
 If the ticket carries `prod`, the body must state a downtime line. If it carries
 `destructive`, it must state the snapshot taken. Those are Linear's own rules for those
-labels, and `pr-gate` fails the PR without them.
+labels, and `pr-gate`'s blocking list covers them — read the ticket's labels *here*, while
+writing the body, because the gate in step 4 checks this body text before the PR exists.
 
 ## 4. Gate the branch before creating anything
 
@@ -127,14 +132,16 @@ before a human is pulled in.
 The branch gate in step 4 could not see CI — no PR existed. Now it does:
 
 ```bash
-gh pr checks <n> --required --watch
+gh pr checks <n> --required --watch || true
 ```
 
-Exit code 8 means still pending. If no check has started after a couple of minutes, say
-so — on some repos CI does not run until the PR is marked ready, and waiting for it on a
-draft hangs for ever.
+Non-zero does not mean failure. "No checks reported" — no CI on the repo, no *required*
+checks, or nothing registered yet — is also non-zero, and so is exit code 8 for pending.
+Read `pr-gate` §2 before judging, and never report an absent CI suite as a failing check.
+If nothing has registered after a couple of minutes, say so: on some repos CI does not run
+until the PR is marked ready, and watching on a draft hangs for ever.
 
-**A required check failing is blocking.** The PR stays a draft, the Linear ticket stays
+**A required check that actually fails is blocking.** The PR stays a draft, the Linear ticket stays
 `In Progress`, and you go to step 8 to report. The ticket moves to `In Review` only once
 the PR is actually marked ready.
 
