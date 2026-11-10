@@ -108,25 +108,32 @@ line, or drop it.
 | `CHANGES REQUESTED` | One or more blocking findings |
 | `APPROVED` | No blocking findings — whatever the non-blocking count |
 
-## 5. Post it
+## 5. Your own PR: report, do not post
 
-**On a PR you authored, post an issue comment.** GitHub rejects `APPROVE` and
-`REQUEST_CHANGES` on your own pull request with a 422 — a formal review is not available,
-so do not attempt one and do not report the failure as a problem with the PR.
+**On a PR you authored the gate is a preflight check, not a review.** Print the verdict
+in the terminal and stop. Do not comment on the PR.
 
-```bash
-gh pr comment <n> --body-file <path>
-```
+The value is in the author seeing it before a reviewer spends time: the missing ticket,
+the wrong base, the failing check. None of that value reaches the PR thread. What does
+reach it is noise above the real review and a green stamp that invites skimming — this
+skill's own PR carried a self-posted `APPROVED` while a reviewer was finding thirty-five
+issues in it. GitHub refusing to let you approve your own pull request is the platform
+making the same point.
 
-**On someone else's PR, show the verdict and get an explicit yes before submitting it.**
-`--approve` and `--request-changes` are real reviews under the user's name: an approval
-can satisfy a branch protection rule and clear the way to a merge, and a request for
-changes blocks a teammate. Neither is yours to submit on a reading of a diff. Print the
-verdict body, say which of the two you are about to post, and wait. "Review this PR" asks
-for the review, not for it to be filed.
+If the user explicitly asks for the verdict on the PR, post it with
+`gh pr comment <n> --body-file <path>` — but that is their call, never the default.
 
-If the user does not want to post, give them the body and stop. Posting with
-`--comment` instead of a state is the safe middle ground when they are unsure.
+## 5b. Someone else's PR: confirm, then post
+
+**Show the verdict and get an explicit yes before submitting it.** `--approve` and
+`--request-changes` are real reviews under the user's name: an approval can satisfy a
+branch protection rule and clear the way to a merge, and a request for changes blocks a
+teammate. Neither is yours to submit on a reading of a diff. Print the verdict body, say
+which of the two you are about to post, and wait. "Review this PR" asks for the review,
+not for it to be filed.
+
+If the user does not want to post, give them the body and stop. `--comment` carries no
+state and is the middle ground when they are unsure.
 
 Once they have said yes:
 
@@ -138,25 +145,9 @@ gh pr review <n> --approve --body-file <path>           # APPROVED
 Write the body to a file and use `--body-file`; passing multi-line markdown inline
 through a shell mangles it.
 
-Begin every body with the marker line `<!-- bronson-pr-gate -->`. On a PR you authored,
-look for an existing comment carrying it and edit that one in place rather than stacking
-a second verdict:
-
-```bash
-ME=$(gh api user --jq .login)
-gh api --paginate repos/<owner/repo>/issues/<n>/comments   --jq ".[] | select(.user.login == \"$ME\" and (.body | contains(\"<!-- bronson-pr-gate -->\"))) | .id"
-gh api -X PATCH repos/<owner/repo>/issues/comments/<id> -F body=@<path>
-```
-
-Filter by your own login: another gate run, by a teammate or an agent, carries the same
-marker, and overwriting it destroys their verdict. Paginate — on a busy PR the verdict is
-not on the first page.
-
-**On someone else's PR you cannot replace a verdict.** A review's state is fixed once
-submitted, so a re-gate posts a *new* review. If your previous verdict was
-`CHANGES REQUESTED` and the new one is `APPROVED`, submitting the approval is what
-unblocks the PR; the old review stays in the timeline and that is expected. Do not try to
-PATCH it into something else.
+A review's state cannot be changed once submitted, so a re-gate posts a *new* review
+rather than replacing the old one. Submitting the new verdict is what changes the PR's
+status; the earlier review stays in the timeline and that is expected.
 
 ## 6. Verdict format
 
@@ -170,7 +161,6 @@ blocking finding needs more than five sentences, the extra belongs in a code com
 the line, not the verdict.
 
 ```markdown
-<!-- bronson-pr-gate -->
 ## pr-gate: CHANGES REQUESTED
 
 **ENG-115** · `feature/kevin-ENG-115-case-intake-postgres` → `develop` · 14 files, +612/-38

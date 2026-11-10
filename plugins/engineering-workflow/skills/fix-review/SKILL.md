@@ -116,9 +116,9 @@ gh api graphql -f query='mutation($id:ID!) {
 
 ## 6. Re-gate
 
-Run `pr-gate` on the PR. On a PR you authored it edits its earlier verdict comment in
-place; on someone else's it posts a new review, because a review body cannot change an
-earlier review's state.
+Run `pr-gate` on the PR. On a PR you authored it reports the verdict in the terminal and
+posts nothing — it is a preflight check. On someone else's it asks before submitting, and
+a re-gate posts a new review, because a review's state cannot be changed once submitted.
 
 On `APPROVED`: mark it ready if it is a draft, then re-request **the reviewers who left
 the feedback**, falling back to the team. GitHub does not re-request on a push, so a
