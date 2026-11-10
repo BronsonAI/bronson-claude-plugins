@@ -53,7 +53,9 @@ the check verdict to the gate that runs after the draft is opened.
 Then:
 
 - **The Linear ticket.** Pull the `ENG-###` from the branch name or PR body and read the
-  issue — it is the scope of record. If the PR references no ticket, that is a finding.
+  issue — it is the scope of record. If the PR references no ticket, that is a finding —
+  except a hotfix carrying `NOTICKET`, where the skill deliberately ships before the
+  ticket exists. Report that as the outstanding rename, not as a missing ticket.
 - **The committed artifacts.** Read `docs/tickets/{KEY}/plan.md` and `spec.md` on the
   branch if present. `plan.md` is what the diff gets checked against.
 - **Checks still running.** `gh pr checks <n> --required --watch`. Read the exit code
@@ -62,12 +64,16 @@ Then:
     branch whether it *has* required checks:
 
     ```bash
-    gh api repos/<owner/repo>/branches/<base>/protection --jq '.required_status_checks.contexts'
+    gh api repos/<owner/repo>/branches/<base>/protection       --jq '.required_status_checks.contexts // [] | length' 2>/dev/null || echo 0
     ```
 
-    None configured → genuinely nothing to wait for. Say "no required checks" and move
-    on. Some configured but none reported → they have not registered yet, which is normal
-    straight after `gh pr create`. Wait and ask again; never mark a PR ready on it.
+    **This 404s with "Branch not protected" on an unprotected branch** — that is the
+    answer "none configured", not an error. Treat a 404 as 0, which is what the
+    `|| echo 0` is for; do not report it as a failed lookup.
+
+    0 → genuinely nothing to wait for. Say "no required checks" and move on.
+    Above 0 but none reported → they have not registered yet, which is normal straight
+    after `gh pr create`. Wait and ask again; never mark a PR ready on it.
   - **8** — still pending (without `--watch`; with `--watch` the command waits instead).
   - **a check actually failed** — blocking.
 

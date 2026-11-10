@@ -108,9 +108,12 @@ branch deleted **outside** that flow, or a parent PR **closed unmerged** and the
 up: the child PR closes, and GitHub refuses both to reopen it and to change its base.
 
 So: never delete a parent branch by hand, and before merging a child confirm its base is
-`develop`. Retargeting the child yourself before the parent merges is still the safe
-move and costs nothing — do it when you are about to close a parent unmerged, or when
-anyone other than GitHub is going to delete the branch.
+`develop`. Otherwise leave the base alone and let GitHub retarget on merge — retargeting
+early puts the parent's unmerged commits in the child's diff, so reviewers and the gate
+read the parent's code under the child's ticket.
+
+Retarget by hand in exactly two cases: a parent you are about to close unmerged, and a
+parent branch somebody other than GitHub is about to delete.
 
 ## 4. Commits
 
