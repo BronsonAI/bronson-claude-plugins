@@ -78,8 +78,22 @@ actually ran.
 
 ## 6. Gate the branch, then PR into main
 
-Gate before creating, exactly as `pr-create` does. Run `pr-gate` in branch mode against
-`origin/main...HEAD`.
+**Write the body first.** The gate below reads it: a missing downtime line is a blocking
+finding, and it cannot be checked against a body that does not exist yet.
+
+The body must state:
+
+- What broke and the user-visible symptom.
+- The root cause.
+- **A downtime line** — the expected downtime, or "No downtime expected" with the reason.
+  Required on every hotfix, whether or not the ticket exists to carry the `prod` label:
+  a hotfix touches production by definition, so the label is a formality and the line is
+  the substance. On a `NOTICKET` hotfix say so, since the gate cannot read the label.
+- How it was verified.
+- Whether any data needs repair after the fix deploys.
+
+Then gate before creating, exactly as `pr-create` does: `pr-gate` in branch mode against
+`origin/main...HEAD`, reading the body text you just drafted.
 
 | Verdict | Action |
 |---|---|
@@ -95,15 +109,6 @@ it here costs a minute.
 git push -u origin hotfix/kevin-ENG-221-token-refresh-loop
 gh pr create --draft --base main --title "[ENG-221] Stop token refresh retry loop" --body-file <path>
 ```
-
-The body must state:
-
-- What broke and the user-visible symptom.
-- The root cause.
-- **A downtime line.** The `prod` label requires it — state the expected downtime, or
-  "No downtime expected" with the reason.
-- How it was verified.
-- Whether any data needs repair after the fix deploys.
 
 Then check CI, which the branch gate could not see — see `pr-gate` §2 for reading the
 exit code, because "no checks reported" also exits non-zero and is **not** a failure. If
@@ -171,9 +176,14 @@ rebase it, because its commits are shared with the hotfix PR and, once merged, w
 code, stop and show the user rather than picking. Merge this PR with a merge commit, not a
 squash, so the next release can match it to its hotfix.
 
-Gate it like any other PR — in branch mode before you open it, same as step 6 — and put
-a reviewer on it. It is a real PR, not bookkeeping. `pr-gate`'s back-merge mode skips the
-naming, ticket and commit-prefix checks, so a clean back-merge gates clean.
+Gate it like any other PR and put a reviewer on it. It is a real PR, not bookkeeping.
+`pr-gate`'s back-merge mode skips the naming, ticket and commit-prefix checks, so a clean
+back-merge gates clean.
+
+**Gate it after the merge-up, not before.** Unlike every other PR here, this branch
+changes between being opened and being ready: it is cut as a snapshot and then brought up
+to what shipped. A gate run at creation reads a diff that is not the one being merged, so
+run it on the PR once the merge-up is pushed and before `gh pr ready`.
 
 **This skill does not merge the hotfix PR.** Merging to `main` is a production deploy and
 the user does it. Never `gh pr merge --admin`. Open the back-merge PR as soon as the

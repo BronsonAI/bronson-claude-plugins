@@ -39,11 +39,12 @@ the REST reply endpoint needs it, and without it there is no way to get from a t
 to the comment you must reply to.
 
 ```bash
-gh api graphql -f query='
-query($owner:String!, $repo:String!, $number:Int!) {
+gh api graphql --paginate -f query='
+query($owner:String!, $repo:String!, $number:Int!, $endCursor:String) {
   repository(owner:$owner, name:$repo) {
     pullRequest(number:$number) {
-      reviewThreads(first:100) {
+      reviewThreads(first:100, after:$endCursor) {
+        pageInfo { hasNextPage endCursor }
         nodes { id isResolved isOutdated path line
           comments(first:20) { nodes { databaseId author { login } body } } }
       }
@@ -51,6 +52,12 @@ query($owner:String!, $repo:String!, $number:Int!) {
   }
 }' -f owner=<owner> -f repo=<repo> -F number=<n>
 ```
+
+`--paginate` needs both the `$endCursor` variable and `pageInfo { hasNextPage endCursor }`
+to walk the pages; without them it fetches one page of 100 and says nothing about the
+rest. A long review reaches that: this plugin's own PR passed 48 threads in three rounds.
+Count the threads you got and say the number, so a truncation shows up as a number that
+looks wrong rather than as feedback that quietly never arrived.
 
 Skip threads already resolved. Treat outdated threads as still open unless the comment is
 clearly answered by the change that outdated it.

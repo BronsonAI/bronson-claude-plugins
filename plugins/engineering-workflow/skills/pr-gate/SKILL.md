@@ -64,7 +64,8 @@ Then:
     branch whether it *has* required checks:
 
     ```bash
-    gh api repos/<owner/repo>/branches/<base>/protection       --jq '.required_status_checks.contexts // [] | length' 2>/dev/null || echo 0
+    gh api repos/<owner/repo>/branches/<base>/protection \
+      --jq '.required_status_checks.contexts // [] | length' 2>/dev/null || echo 0
     ```
 
     **This 404s with "Branch not protected" on an unprotected branch** — that is the
@@ -82,13 +83,15 @@ Then:
 
 Read the actual diff. Never infer what a PR does from its title or body.
 
-**Modes.** Three kinds of PR are not feature PRs, and the convention checks do not apply:
+**Modes.** Four kinds of PR are not ordinary feature PRs. Each changes which passes
+apply — for three of them the convention checks are noise by construction; for a hotfix
+they still run:
 
 | PR | How to tell | What to run |
 |---|---|---|
-| Release | head `develop`, base `main` | Blocking pass only, plus the migration and config flags and whether `main` is behind. Skip branch name, ticket, artifacts, commit prefixes — merge commits and unkeyed commits are expected. |
+| Release | head `develop`, base `main` | Blocking pass only, plus the migration and config flags and whether a merged hotfix has no matching back-merge (`release` step 2 — not `behind_by`, which is non-zero after every promotion). Skip branch name, ticket, artifacts, commit prefixes — merge commits and unkeyed commits are expected. |
 | Back-merge | head `backmerge/*`, base `develop` | Blocking pass only. Base `develop` is correct here. Never rename the branch or rewrite its commits: they are shared with the hotfix PR and with `main`. |
-| Hotfix | head `hotfix/*`, base `main` | Base `main` is correct — that is the whole point of a hotfix. Run every other pass; the ticket and the `prod` downtime line matter more here, not less. |
+| Hotfix | head `hotfix/*`, base `main` | Base `main` is correct — that is the whole point of a hotfix. Run every pass normally. The `prod` downtime line is blocking as usual, and a `NOTICKET` placeholder is reported as the outstanding rename, not as a missing ticket. |
 | Exempt repo | no `develop` branch | Base is the default branch, and that is correct. Skip the base-branch check entirely. |
 
 ## 3. The review passes
