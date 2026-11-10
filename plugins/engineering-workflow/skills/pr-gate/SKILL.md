@@ -58,16 +58,21 @@ Then:
   branch if present. `plan.md` is what the diff gets checked against.
 - **Checks still running.** `gh pr checks <n> --required --watch`. Read the exit code
   carefully, because three different outcomes are non-zero:
-  - **no checks reported** (no CI on the repo, no *required* checks, or the PR was only
-    just created and nothing has registered) — **not a failure.** Say "no required checks"
-    and move on. Never report this as a failing check.
-  - **8** — still pending. Never approve on a pending suite: either wait, or give the
-    verdict marked "provisional, CI pending".
+  - **no checks reported** — ambiguous, and the two cases are not the same. Ask the base
+    branch whether it *has* required checks:
+
+    ```bash
+    gh api repos/<owner/repo>/branches/<base>/protection --jq '.required_status_checks.contexts'
+    ```
+
+    None configured → genuinely nothing to wait for. Say "no required checks" and move
+    on. Some configured but none reported → they have not registered yet, which is normal
+    straight after `gh pr create`. Wait and ask again; never mark a PR ready on it.
+  - **8** — still pending (without `--watch`; with `--watch` the command waits instead).
   - **a check actually failed** — blocking.
 
-  Distinguish them before judging: `gh pr checks <n> --required` with no `--watch` prints
-  "no checks reported" in the first case. Only a *required* check counts as blocking — an
-  optional job going red is a note.
+  Never report any of the first two as a failing check. Only a *required* check counts as
+  blocking — an optional job going red is a note.
 
 Read the actual diff. Never infer what a PR does from its title or body.
 
@@ -76,7 +81,7 @@ Read the actual diff. Never infer what a PR does from its title or body.
 | PR | How to tell | What to run |
 |---|---|---|
 | Release | head `develop`, base `main` | Blocking pass only, plus the migration and config flags and whether `main` is behind. Skip branch name, ticket, artifacts, commit prefixes — merge commits and unkeyed commits are expected. |
-| Back-merge | head `backmerge/*`, base `develop` | Blocking pass only. Base `develop` is correct here. Never rename the branch or rewrite its commits: they came from `main`. |
+| Back-merge | head `backmerge/*`, base `develop` | Blocking pass only. Base `develop` is correct here. Never rename the branch or rewrite its commits: they are shared with the hotfix PR and with `main`. |
 | Hotfix | head `hotfix/*`, base `main` | Base `main` is correct — that is the whole point of a hotfix. Run every other pass; the ticket and the `prod` downtime line matter more here, not less. |
 | Exempt repo | no `develop` branch | Base is the default branch, and that is correct. Skip the base-branch check entirely. |
 

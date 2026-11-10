@@ -98,8 +98,15 @@ a config carrying only `jsxA11y.flatConfigs.recommended` reports a parsing error
 first type annotation in every `.tsx` file and evaluates no jsx-a11y rules at all — the
 run then reads as clean, or as a pile of errors that are not accessibility findings.
 
+Check which parser package the repo has first — importing the wrong one fails with
+module-not-found before a single file is linted:
+
+```bash
+node -e "require.resolve('typescript-eslint')" 2>/dev/null && echo meta || echo parser-only
+```
+
 ```js
-// tmp-a11y.mjs
+// tmp-a11y.mjs - "meta": the typescript-eslint package is present
 import tseslint from 'typescript-eslint'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 
@@ -107,6 +114,21 @@ export default [
   { files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {
       parser: tseslint.parser,
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    } },
+  jsxA11y.flatConfigs.recommended,
+]
+```
+
+```js
+// tmp-a11y.mjs - "parser-only": the repo has @typescript-eslint/parser alone
+import tsParser from '@typescript-eslint/parser'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
+
+export default [
+  { files: ['**/*.{ts,tsx,js,jsx}'],
+    languageOptions: {
+      parser: tsParser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     } },
   jsxA11y.flatConfigs.recommended,

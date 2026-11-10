@@ -47,16 +47,18 @@ gh api repos/<owner/repo>/compare/main...develop --jq '{ahead: .ahead_by, behind
 
 ```bash
 # merged hotfixes into main
-gh pr list --base main --state merged --limit 30 \
+gh pr list --base main --state merged --limit 50 \
   --json number,headRefName --jq '.[] | select(.headRefName | startswith("hotfix/")) | .headRefName'
 
-# merged back-merges into develop
-gh pr list --base develop --state merged --limit 30 \
-  --json number,headRefName --jq '.[] | select(.headRefName | startswith("backmerge/")) | .headRefName'
+# for each key above, look the back-merge up directly rather than listing and filtering
+gh pr list --base develop --state merged --search "ENG-221" --json number,headRefName
 ```
 
-  A merged `hotfix/*` into `main` with no merged `backmerge/*` carrying the same `ENG-###`
-  is the thing to stop for. Everything else is normal promotion history. Merging `develop`
+  Look each hotfix key up directly rather than listing back-merges and filtering. A
+  `--limit` applies before the jq filter, and on `develop` the recent merges are mostly
+  feature PRs, so a back-merge older than the window drops out and its hotfix looks
+  outstanding, stopping the release for nothing. A merged `hotfix/*` into `main` with no
+  merged `backmerge/*` carrying the same `ENG-###` is the thing to stop for. Everything else is normal promotion history. Merging `develop`
   into `main` is a three-way merge and does not by itself revert a `main`-only commit.
 
 The compare API caps at 250 commits and 300 files; past that it truncates silently. Use

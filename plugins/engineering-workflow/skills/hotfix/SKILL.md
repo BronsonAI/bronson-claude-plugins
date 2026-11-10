@@ -35,7 +35,10 @@ the normal gates.
 If production is actively down, still check `list_issues` for an existing ticket, then
 show a one-line draft and take a quick yes — that costs seconds. If the user is
 unanswered, say in your report that the ticket is still to be created and carry on with
-the fix — do not create it unconfirmed. "Unreachable" is not a state you can judge from a
+the fix — do not create it unconfirmed. Working without a key, use `NOTICKET` wherever
+`{KEY}` appears (`hotfix/kevin-NOTICKET-token-refresh-loop`, `[NOTICKET]` commit prefixes,
+`docs/tickets/NOTICKET/`) and say so in the PR body. Rename the branch and directory and
+amend the prefixes once the key exists, before the PR is marked ready. "Unreachable" is not a state you can judge from a
 prompt that has not been answered yet, and a `Bug` + `prod` ticket notifies the team with
 content nobody approved. Ticketing never holds the fix; it also never happens unasked.
 
@@ -103,7 +106,9 @@ The body must state:
 - Whether any data needs repair after the fix deploys.
 
 Then check CI, which the branch gate could not see — see `pr-gate` §2 for reading the
-exit code, because "no checks reported" also exits non-zero and is **not** a failure:
+exit code, because "no checks reported" also exits non-zero and is **not** a failure. If
+the base branch has required checks, wait for them to register rather than taking an
+immediate "no checks reported" at face value:
 
 ```bash
 gh pr checks <n> --required --watch || true
@@ -139,17 +144,32 @@ git push -u origin backmerge/main-to-develop-ENG-221
 gh pr create --draft --base develop --title "Back-merge ENG-221 hotfix into develop" --body-file <path>
 ```
 
-Open it as a draft while the hotfix PR is still open, and mark it ready once the hotfix
-has merged to `main`.
+A separate branch, rather than opening `main` into `develop` directly, so you can resolve
+conflicts without pushing to `develop`.
 
-Branch off `main` rather than opening `main` into `develop` directly: a separate branch
-lets you resolve conflicts without pushing to `develop`.
+**It is a snapshot.** Cut while the hotfix PR is still open, it has the hotfix as it
+looked then — a commit pushed to the hotfix afterwards, in answer to review, never reaches
+it. Before marking it ready, bring it up to the fix that actually shipped and check it is
+there:
+
+```bash
+git fetch origin
+git checkout backmerge/main-to-develop-ENG-221
+git merge origin/main
+git log --oneline origin/develop..HEAD
+git push
+gh pr ready <n>
+```
+
+If `main` carries the fix as a squash, that merge brings the squashed commit in; if as a
+merge commit, the hotfix's own commits. Either way the content is what shipped. Confirm
+the fix is in the diff rather than assuming the merge did it.
 
 Resolve conflicts with `git merge origin/develop` **on the back-merge branch** — never
-rebase it, because its commits are already on `main`. Keep both changes; if the hotfix and
-`develop` genuinely disagree about the same code, stop and show the user rather than
-picking. Merge this PR with a merge commit, not a squash: a squash leaves `main`'s commits
-outside `develop`'s history and the next release reports a phantom un-back-merged hotfix.
+rebase it, because its commits are shared with the hotfix PR and, once merged, with
+`main`. Keep both changes; if the hotfix and `develop` genuinely disagree about the same
+code, stop and show the user rather than picking. Merge this PR with a merge commit, not a
+squash, so the next release can match it to its hotfix.
 
 Gate it like any other PR — in branch mode before you open it, same as step 6 — and put
 a reviewer on it. It is a real PR, not bookkeeping. `pr-gate`'s back-merge mode skips the

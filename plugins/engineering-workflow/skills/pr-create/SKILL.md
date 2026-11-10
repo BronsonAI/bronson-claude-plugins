@@ -83,7 +83,7 @@ Migrations, data changes, config or secret changes, anything needing a deploy or
 Write "None" if there is none.
 
 ## Stacked on
-#41 — retarget this PR to `develop` before #41 merges.
+#41 — this diff includes #41's commits until #41 merges.
 ```
 
 Omit the **Stacked on** section when the base is `develop`. Keep it when stacked, so the
