@@ -37,7 +37,8 @@ ticket, say so rather than silently widening the work.
   is `hotfix/`, not `fix/`. For work that will never have a ticket — a chore, CI, docs —
   use `chore`, `ci` or `docs` and drop the `{KEY}` segment. That is different from work
   whose ticket does not exist *yet*: a hotfix shipped before its ticket is confirmed uses
-  `NOTICKET` in the key's place and is renamed once the key exists (`hotfix` step 2).
+  `NOTICKET-<yyyymmddhhmm>` in the key's place and keeps it. Once the key exists it goes
+  in the PR titles and bodies; the branch is never renamed (`hotfix` step 2).
 - `first-name` — the author's first name, lowercase. Not a username.
 - `KEY` — the Linear key, uppercase, matching the commit prefix and the artifact
   directory so all three read the same.

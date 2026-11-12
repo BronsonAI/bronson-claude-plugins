@@ -35,21 +35,25 @@ the normal gates.
 If production is actively down, still check `list_issues` for an existing ticket, then
 show a one-line draft and take a quick yes — that costs seconds. If the user is
 unanswered, say in your report that the ticket is still to be created and carry on with
-the fix — do not create it unconfirmed. Working without a key, use `NOTICKET` wherever
-`{KEY}` appears (`hotfix/kevin-NOTICKET-token-refresh-loop`, `[NOTICKET]` commit prefixes,
-`docs/tickets/NOTICKET/`) and say so in the PR body.
+the fix — do not create it unconfirmed. Working without a key, use
+`NOTICKET-<yyyymmddhhmm>` — the time you cut the branch — wherever `{KEY}` appears
+(`hotfix/kevin-NOTICKET-202611121430-token-refresh-loop`, `[NOTICKET-202611121430]`
+commit prefixes, `docs/tickets/NOTICKET-202611121430/`) and say so in the PR body. The
+timestamp is what keeps two keyless hotfixes apart: a bare `NOTICKET` gives them the same
+back-merge branch, and `release` then matches one hotfix to the other's back-merge.
 
 **Once the key exists, do not rename the branch or amend the commits.** By then the branch
 is pushed, the PR is open and the back-merge may be cut from it: amending prefixes needs a
 force-push, which `pr-create`, the conventions and `fix-review` all forbid on a pushed
 branch, and renaming by push-and-delete closes the open PR. Instead:
 
-- Put the real key in the **title and body of both PRs**. That is what `release`'s
-  back-merge lookup searches, so the back-merge is still found under its `NOTICKET` name.
-- Rename `docs/tickets/NOTICKET/` to the real key in an ordinary commit — a file move
+- Put the real key in the **title and body of both PRs**, for the reviewer and for
+  Linear's linking.
+- Rename `docs/tickets/NOTICKET-<…>/` to the real key in an ordinary commit — a file move
   needs no force-push.
-- Leave `backmerge/main-to-develop-NOTICKET` alone; `pr-gate`'s back-merge mode says never
-  to rename it. "Unreachable" is not a state you can judge from a
+- Leave both branch names alone. `release` finds the back-merge by deriving its branch
+  name from the hotfix's, so the two must carry the same placeholder, character for
+  character. "Unreachable" is not a state you can judge from a
 prompt that has not been answered yet, and a `Bug` + `prod` ticket notifies the team with
 content nobody approved. Ticketing never holds the fix; it also never happens unasked.
 
@@ -99,7 +103,7 @@ The body must state:
 - **A downtime line** — the expected downtime, or "No downtime expected" with the reason.
   Required on every hotfix, whether or not the ticket exists to carry the `prod` label:
   a hotfix touches production by definition, so the label is a formality and the line is
-  the substance. On a `NOTICKET` hotfix say so, since the gate cannot read the label.
+  the substance. On a `NOTICKET-<…>` hotfix say so, since the gate cannot read the label.
 - How it was verified.
 - Whether any data needs repair after the fix deploys.
 
@@ -121,10 +125,10 @@ git push -u origin hotfix/kevin-ENG-221-token-refresh-loop
 gh pr create --draft --base main --title "[ENG-221] Stop token refresh retry loop" --body-file <path>
 ```
 
-Then check CI, which the branch gate could not see — see `pr-gate` §2 for reading the
-exit code, because "no checks reported" also exits non-zero and is **not** a failure. If
-the base branch has required checks, wait for them to register rather than taking an
-immediate "no checks reported" at face value:
+Then check CI, which the branch gate could not see. First run the required-checks
+lookup in `pr-gate` §2 against `main`, because "no checks reported" exits non-zero and
+means different things: with 0 required there is nothing to wait for; with a count above
+0 they have not registered yet, so wait; if the lookup failed, CI is unverified, say so:
 
 ```bash
 gh pr checks <n> --required --watch || true

@@ -70,8 +70,9 @@ Then:
 
 - **The Linear ticket.** Pull the `ENG-###` from the branch name or PR body and read the
   issue — it is the scope of record. If the PR references no ticket, that is a finding —
-  except a hotfix carrying `NOTICKET`, where the skill deliberately ships before the
-  ticket exists. Report that as the outstanding rename, not as a missing ticket.
+  except a hotfix carrying a `NOTICKET-<…>` placeholder, where the skill deliberately
+  ships before the ticket exists. Report whether the real key is in the PR title and body
+  yet; the branch and commits keep the placeholder for good.
 - **The committed artifacts.** Read `docs/tickets/{KEY}/plan.md` and `spec.md` on the
   branch if present. `plan.md` is what the diff gets checked against.
 - **Checks still running.** `gh pr checks <n> --required --watch`. Read the exit code
@@ -114,8 +115,8 @@ they still run:
 | PR | How to tell | What to run |
 |---|---|---|
 | Release | head `develop`, base `main` | Blocking pass only, plus the migration and config flags and whether a merged hotfix has no matching back-merge (`release` step 2 — not `behind_by`, which is non-zero after every promotion). Skip branch name, ticket, artifacts, commit prefixes — merge commits and unkeyed commits are expected. |
-| Back-merge | head `backmerge/*`, base `develop` | Blocking pass only. Base `develop` is correct here. Never rename the branch or rewrite its commits: they are shared with the hotfix PR and with `main`. A `NOTICKET` name stays as it is — the key lives in the PR title and body. |
-| Hotfix | head `hotfix/*`, base `main` | Base `main` is correct — that is the whole point of a hotfix. Run every pass normally. The `prod` downtime line is blocking as usual, and a `NOTICKET` placeholder is reported as the outstanding rename, not as a missing ticket. |
+| Back-merge | head `backmerge/*`, base `develop` | Blocking pass only. Base `develop` is correct here. Never rename the branch or rewrite its commits: they are shared with the hotfix PR and with `main`. A `NOTICKET-<…>` name stays as it is — the key lives in the PR title and body. |
+| Hotfix | head `hotfix/*`, base `main` | Base `main` is correct — that is the whole point of a hotfix. Run every pass normally. The `prod` downtime line is blocking as usual, and a `NOTICKET-<…>` placeholder is not a missing ticket: report whether the real key is in the title and body yet, never ask for the branch to be renamed. |
 | Exempt repo | no `develop` branch | Base is the default branch, and that is correct. Skip the base-branch check entirely. |
 
 ## 3. The review passes

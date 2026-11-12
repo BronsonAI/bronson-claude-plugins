@@ -47,25 +47,28 @@ gh api repos/<owner/repo>/compare/main...develop --jq '{ahead: .ahead_by, commit
 
 ```bash
 # merged hotfixes into main
-gh pr list --base main --state merged --limit 50 \
-  --json number,headRefName --jq '.[] | select(.headRefName | startswith("hotfix/")) | .headRefName'
+gh pr list --base main --state merged --limit 100 --json number,headRefName,title \
+  --jq '.[] | select(.headRefName | startswith("hotfix/")) | [.number, .headRefName, .title] | @tsv'
 
-# for each key above, look the back-merge up directly rather than listing and filtering
-gh pr list --base develop --state merged --search "ENG-221" --json number,headRefName \
-  --jq '.[] | select(.headRefName | startswith("backmerge/"))'
+# for each one, the back-merge it should have, looked up by its exact branch name
+gh pr list --base develop --state merged \
+  --head backmerge/main-to-develop-ENG-221 --json number,title
 ```
 
-  A merged `hotfix/*` into `main` with no merged `backmerge/*` carrying the same
-  `ENG-###` is the thing to stop for. Everything else is normal promotion history.
+  For each hotfix, take the key from its **branch name** — `ENG-221`, or the
+  `NOTICKET-<yyyymmddhhmm>` placeholder for one shipped before its ticket existed — and
+  look up `backmerge/main-to-develop-<that>` with `--head`. `hotfix` names the back-merge
+  from the same key and never renames either branch, so the two always match exactly.
 
-  `--search` is full text, so keep the `backmerge/` filter on the command: without it a
-  feature PR that merely mentions the key ("follow-up to ENG-221") passes as the
-  back-merge. Look each key up rather than listing back-merges and filtering: a `--limit`
-  applies
-  before the jq filter, and on `develop` the recent merges are mostly feature PRs, so a
-  back-merge older than the window drops out and its hotfix looks outstanding — stopping
-  the release for nothing. Merging `develop` into `main` is a three-way merge and does not
-  by itself revert a `main`-only commit.
+  An exact head match is the point. A full-text `--search` for the key also matches any
+  feature PR that merely mentions it; listing back-merges and filtering in jq loses older
+  ones to `--limit`, which applies before the filter. Neither happens with `--head`.
+
+  No merged PR for that head → the hotfix was never back-merged: stop. For a placeholder
+  hotfix, also report the real key from its title, or that the title still has none —
+  the ticket was never created. Everything else on `main` is normal promotion history.
+  Merging `develop` into `main` is a three-way merge and does not by itself revert a
+  `main`-only commit.
 
 The compare API caps at 250 commits and 300 files; past that it truncates silently. Use
 `git log origin/main..origin/develop` for the commit list and say so explicitly if either

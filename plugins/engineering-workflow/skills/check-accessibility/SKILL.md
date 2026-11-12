@@ -102,10 +102,14 @@ Check which parser package the repo has first — importing the wrong one fails 
 module-not-found before a single file is linted:
 
 ```bash
-node -e "require.resolve('typescript-eslint')" 2>/dev/null && echo meta \
-  || node -e "require.resolve('@typescript-eslint/parser')" 2>/dev/null && echo parser-only \
-  || echo no-ts
+if node -e "require.resolve('typescript-eslint')" 2>/dev/null; then echo meta
+elif node -e "require.resolve('@typescript-eslint/parser')" 2>/dev/null; then echo parser-only
+else echo no-ts
+fi
 ```
+
+Keep it as `if`/`elif`: an `&&`/`||` chain of the same three checks prints both `meta` and
+`parser-only` when the first one succeeds.
 
 Three outcomes, not two. A plain JavaScript React app has neither package, and importing
 `@typescript-eslint/parser` there fails with module-not-found before a file is linted —

@@ -30,14 +30,10 @@ Stop and fix before opening anything:
   Already pushed, or the repo has its own convention → leave it and say so in the report.
   Never rename and force-push a branch to satisfy the format.
 - **Branch pushed:** `git push -u origin <branch>`.
-- **CI expectations known:** ask the base branch what it requires, so step 5b knows
-  whether "no checks reported" means nothing to wait for or nothing registered yet. A 404
-  here means the branch is unprotected, which is the answer 0 — see `pr-gate` §2.
-
-  ```bash
-  gh api repos/<owner/repo>/branches/<base>/protection \
-    --jq '.required_status_checks.contexts // [] | length' 2>/dev/null || echo 0
-  ```
+- **CI expectations known:** run the required-checks lookup in `pr-gate` §2 against the
+  base and keep the answer — a count, or *unknown* if the lookup failed — so step 5b can
+  tell "nothing to wait for" from "nothing registered yet". Use that command; do not keep
+  a copy of it here, which is how this step ended up on an endpoint pr-gate forbids.
 
 ## 2. Pick the base
 
@@ -142,11 +138,17 @@ The branch gate in step 4 could not see CI — no PR existed. Now it does:
 gh pr checks <n> --required --watch || true
 ```
 
-Non-zero does not mean failure. "No checks reported" — no CI on the repo, no *required*
-checks, or nothing registered yet — is also non-zero, and so is exit code 8 for pending.
-Read `pr-gate` §2 before judging, and never report an absent CI suite as a failing check.
-If nothing has registered after a couple of minutes, say so: on some repos CI does not run
-until the PR is marked ready, and watching on a draft hangs for ever.
+Non-zero does not mean failure. When it prints "no checks reported", the answer you kept
+from step 1 says which case you are in:
+
+- **0 required** → nothing to wait for. Move on.
+- **a count above 0** → they have not registered yet. Wait and run it again; never mark
+  the PR ready on "no checks reported". If nothing has registered after a couple of
+  minutes, say so: on some repos CI does not run until the PR is marked ready, and
+  watching a draft hangs for ever.
+- **unknown** → say the CI check is unverified, and why the lookup failed.
+
+Never report an absent CI suite as a failing check. `pr-gate` §2 has the full reading.
 
 **A required check that actually fails is blocking.** The PR stays a draft, the Linear ticket stays
 `In Progress`, and you go to step 8 to report. The ticket moves to `In Review` only once
