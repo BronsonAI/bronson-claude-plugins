@@ -46,14 +46,24 @@ gh api repos/<owner/repo>/compare/main...develop --jq '{ahead: .ahead_by, commit
   `behind_by` does. **Ask about PRs instead**, which is merge-strategy independent:
 
 ```bash
-# merged hotfixes into main
-gh pr list --base main --state merged --limit 100 --json number,headRefName,title \
-  --jq '.[] | select(.headRefName | startswith("hotfix/")) | [.number, .headRefName, .title] | @tsv'
+# when develop was last promoted
+LAST=$(gh pr list --base main --head develop --state merged --limit 1 \
+  --json mergedAt --jq '.[0].mergedAt // ""')
+
+# hotfixes merged into main since then
+LAST="$LAST" gh pr list --base main --state merged --limit 100 \
+  --json number,headRefName,title,mergedAt \
+  --jq '.[] | select(.headRefName | startswith("hotfix/")) | select(.mergedAt > env.LAST) | [.number, .headRefName, .title] | @tsv'
 
 # for each one, the back-merge it should have, looked up by its exact branch name
 gh pr list --base develop --state merged \
   --head backmerge/main-to-develop-ENG-221 --json number,title
 ```
+
+  **Only hotfixes since the last release.** Anything older has already been through a
+  promotion; checking it again stops every future release on history. FOIAger's
+  `hotfix/prod-env`, from before this convention existed, would otherwise block all of
+  them. With no earlier release, `LAST` is empty and every hotfix is in scope.
 
   For each hotfix, take the key from its **branch name** — `ENG-221`, or the
   `NOTICKET-<yyyymmddhhmm>` placeholder for one shipped before its ticket existed — and
@@ -63,6 +73,11 @@ gh pr list --base develop --state merged \
   An exact head match is the point. A full-text `--search` for the key also matches any
   feature PR that merely mentions it; listing back-merges and filtering in jq loses older
   ones to `--limit`, which applies before the filter. Neither happens with `--head`.
+
+  A hotfix whose branch carries neither an `ENG-###` nor a `NOTICKET-<…>` placeholder was
+  made outside `hotfix`, so there is no name to look its back-merge up by. That is
+  *unknown*, not missing: put it under **Needs attention** and ask the user to confirm its
+  fix is in `develop` before going on.
 
   No merged PR for that head → the hotfix was never back-merged: stop. For a placeholder
   hotfix, also report the real key from its title, or that the title still has none —
