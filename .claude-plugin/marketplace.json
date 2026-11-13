@@ -8,7 +8,7 @@
     {
       "name": "engineering-workflow",
       "source": "./plugins/engineering-workflow",
-      "description": "Ticket-first engineering workflow (Linear -> repo -> Notion), plus the default engineering toolchain: Linear, GitHub, and Notion MCP servers."
+      "description": "The Bronson engineering workflow end to end: start a Linear ticket, open and gate PRs, act on review feedback, hotfix, release, and audit accessibility. Bundles the Linear and Notion MCP servers."
     }
   ]
 }
