@@ -1,13 +1,13 @@
 ---
 name: hotfix
-description: Ship an urgent production fix — branch from main, fix, gate the branch, PR into main, then open the back-merge PR down to develop so the fix is not lost. Does not merge the production PR. Use when production is broken, when asked for a hotfix or emergency fix, or when a fix must bypass the normal develop promotion.
+description: Ship an urgent production fix — branch from main, fix, gate the branch, PR into main, then open the back-merge PR down to develop so develop has the fix too. Does not merge the production PR. Use when production is broken, when asked for a hotfix or emergency fix, or when a fix must bypass the normal develop promotion.
 ---
 
 # hotfix
 
 The one path that merges upward out of order. A hotfix branches from `main`, lands in
 `main`, and is then merged back down to `develop` — because a fix that only exists in
-`main` gets reverted by the next `develop` promotion.
+`main` leaves `develop` and the dev environment without it.
 
 Use it only for a production break. Anything that can wait for the normal `develop` cycle
 should use `start-ticket`.
@@ -60,7 +60,10 @@ content nobody approved. Ticketing never holds the fix; it also never happens un
 ## 3. Branch from main
 
 ```bash
-git fetch origin
+git fetch origin +main:refs/remotes/origin/main +develop:refs/remotes/origin/develop
+if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+  git fetch --unshallow origin +main:refs/remotes/origin/main +develop:refs/remotes/origin/develop
+fi
 git checkout -b hotfix/kevin-ENG-221-token-refresh-loop origin/main
 ```
 
@@ -148,8 +151,11 @@ quietly merging.
 
 ## 7. Back-merge into develop
 
-**This is the step that gets forgotten, and skipping it silently reverts the fix** on the
-next `develop` to `main` promotion.
+**This is the step that gets forgotten.** Skipping it does not revert the fix — promoting `develop` is a three-way merge, so
+`main` keeps it. What it costs is `develop`: the dev environment runs without the fix,
+later work is built and tested without it, and if `develop` changes the same files, the
+next promotion conflicts there and can drop it in the resolution. `release` reports a
+missing back-merge on every release until it exists, and stops only in that last case.
 
 **The branch must contain the fix**, so cut it from the hotfix branch, not from
 `origin/main` — `main` does not have the fix until the hotfix PR merges. Cutting from
@@ -158,7 +164,10 @@ branches, or a PR whose branch is a pre-fix snapshot that never picks the fix up
 merges, the report says the back-merge is done, and `develop` still lacks the fix.
 
 ```bash
-git fetch origin
+git fetch origin +main:refs/remotes/origin/main +develop:refs/remotes/origin/develop
+if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+  git fetch --unshallow origin +main:refs/remotes/origin/main +develop:refs/remotes/origin/develop
+fi
 git checkout -b backmerge/main-to-develop-ENG-221 hotfix/kevin-ENG-221-token-refresh-loop
 git push -u origin backmerge/main-to-develop-ENG-221
 gh pr create --draft --base develop --title "Back-merge ENG-221 hotfix into develop" --body-file <path>
@@ -173,7 +182,10 @@ it. Before marking it ready, bring it up to the fix that actually shipped and ch
 there:
 
 ```bash
-git fetch origin
+git fetch origin +main:refs/remotes/origin/main +develop:refs/remotes/origin/develop
+if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+  git fetch --unshallow origin +main:refs/remotes/origin/main +develop:refs/remotes/origin/develop
+fi
 git checkout backmerge/main-to-develop-ENG-221
 git merge origin/main
 git log --oneline origin/develop..HEAD

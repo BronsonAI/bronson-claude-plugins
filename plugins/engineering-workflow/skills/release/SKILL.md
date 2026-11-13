@@ -16,7 +16,10 @@ upward, so this ships everything currently on `develop`.
 ## 1. Check develop is shippable
 
 ```bash
-git fetch origin
+git fetch origin +main:refs/remotes/origin/main +develop:refs/remotes/origin/develop
+if [ "$(git rev-parse --is-shallow-repository)" = true ]; then
+  git fetch --unshallow origin +main:refs/remotes/origin/main +develop:refs/remotes/origin/develop
+fi
 gh run list --branch develop --limit 5
 ```
 
@@ -50,20 +53,27 @@ gh api repos/<owner/repo>/compare/main...develop --jq '{ahead: .ahead_by, commit
 LAST=$(gh pr list --base main --head develop --state merged --limit 1 \
   --json mergedAt --jq '.[0].mergedAt // ""')
 
-# hotfixes merged into main since then
-LAST="$LAST" gh pr list --base main --state merged --limit 100 \
+# every hotfix merged into main, with when, so keyless ones can be scoped to since LAST
+gh pr list --base main --state merged --limit 100 \
   --json number,headRefName,title,mergedAt \
-  --jq '.[] | select(.headRefName | startswith("hotfix/")) | select(.mergedAt > env.LAST) | [.number, .headRefName, .title] | @tsv'
+  --jq '.[] | select(.headRefName | startswith("hotfix/")) | [.number, .headRefName, .mergedAt, .title] | @tsv'
 
 # for each one, the back-merge it should have, looked up by its exact branch name
 gh pr list --base develop --state merged \
   --head backmerge/main-to-develop-ENG-221 --json number,title
+
+# for one with no back-merge: the files it changed, and the files this release changes
+gh pr view <hotfix-number> --json files --jq '.files[].path'
+git diff --name-only origin/main...origin/develop
 ```
 
-  **Only hotfixes since the last release.** Anything older has already been through a
-  promotion; checking it again stops every future release on history. FOIAger's
-  `hotfix/prod-env`, from before this convention existed, would otherwise block all of
-  them. With no earlier release, `LAST` is empty and every hotfix is in scope.
+  **A hotfix with a key or placeholder is checked at any age**, every release, until its
+  back-merge exists. Its back-merge name is exact, so age cannot produce a false match,
+  and a back-merge someone skipped keeps surfacing instead of dropping out after one
+  release went ahead without it. **A hotfix with no key is checked only if merged after
+  `LAST`**: it predates this convention, has no name to look up, and FOIAger's
+  `hotfix/prod-env` from 2025 would otherwise ask the same question every release. With
+  no earlier release, `LAST` is empty and every hotfix is in scope.
 
   For each hotfix, take the key from its **branch name** — `ENG-221`, or the
   `NOTICKET-<yyyymmddhhmm>` placeholder for one shipped before its ticket existed — and
@@ -76,14 +86,25 @@ gh pr list --base develop --state merged \
 
   A hotfix whose branch carries neither an `ENG-###` nor a `NOTICKET-<…>` placeholder was
   made outside `hotfix`, so there is no name to look its back-merge up by. That is
-  *unknown*, not missing: put it under **Needs attention** and ask the user to confirm its
-  fix is in `develop` before going on.
+  *unknown*, not missing: put it under **Needs attention** for the user to confirm its fix
+  is in `develop`. It does not hold the release on its own any more than a known-missing
+  back-merge does; the file-overlap rule below applies to it the same way, since its
+  files are known even though its back-merge is not.
 
-  No merged PR for that head → the hotfix was never back-merged: stop. For a placeholder
-  hotfix, also report the real key from its title, or that the title still has none —
-  the ticket was never created. Everything else on `main` is normal promotion history.
-  Merging `develop` into `main` is a three-way merge and does not by itself revert a
-  `main`-only commit.
+  No merged PR for that head → the hotfix was never back-merged. That alone does **not**
+  stop the release: promoting `develop` is a three-way merge, so `main` keeps the fix,
+  and the release neither causes nor worsens what `develop` is missing. Put it under
+  **Needs attention**, with the date it merged, which the listing above already gives.
+
+  It **stops** the release when that hotfix and this release change any of the same
+  files. Then the promotion merge can meet the fix on one side and `develop`'s older
+  version of the same code on the other, and conflict resolution can take `develop`'s
+  side and drop the fix from production. Same file is a conservative stand-in for same
+  lines; the cost of a false stop is one back-merge. Back-merge first, then release.
+
+  For a placeholder hotfix, also report the real key from its title, or that the title
+  still has none — the ticket was never created. Everything else on `main` is normal
+  promotion history.
 
 The compare API caps at 250 commits and 300 files; past that it truncates silently. Use
 `git log origin/main..origin/develop` for the commit list and say so explicitly if either
@@ -165,8 +186,10 @@ So the gate does not re-read the features. It looks only for what is new at prom
 time, which is the handful of things no single feature PR could have seen:
 
 - The migration and config or secret flags from step 3, across the combined diff.
-- A merged hotfix with no matching back-merge (step 2). Not `behind_by`, and not any
-  `git log` form of it — step 2 says why.
+- A hotfix with no back-merge that changes files this release also changes (step 2) —
+  the promotion merge can drop its fix. A missing back-merge without that overlap goes
+  under **Needs attention**, not here. Not `behind_by`, and not any `git log` form of
+  it — step 2 says why.
 - Two changes that are each fine alone and conflict together: competing migrations on one
   table, a config key set twice.
 

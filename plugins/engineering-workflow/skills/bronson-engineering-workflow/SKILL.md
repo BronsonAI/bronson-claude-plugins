@@ -91,8 +91,8 @@ fit this section.
 - A `staging` branch exists between them in some repos and is **not in use today**.
   Treat `develop` to `main` as the only promotion path until that changes.
 - Hotfixes are the one upward exception: branch from `main`, PR into `main`, then open a
-  back-merge PR from `main` down to `develop` so the fix is not lost on the next
-  promotion. Use `hotfix`.
+  back-merge PR from `main` down to `develop` so `develop` has the fix too. Use
+  `hotfix`.
 - Never commit directly to `main` or `develop`. Every change goes through a PR, however
   small.
 
@@ -184,6 +184,15 @@ asks to evaluate a change.
 
 ## 8. Environment notes that bite
 
+- **A single-branch clone never gets `origin/main` from `git fetch origin`,** and a
+  shallow one has no merge base. Its fetch refspec covers only the branch it was cloned
+  with, so `origin/main...origin/develop` fails with "unknown revision" however often
+  you fetch — and once the branch is there, a shallow clone fails again with "no merge
+  base". If `git branch -r` lacks a branch a skill needs, fetch it by name
+  (`git fetch origin +<b>:refs/remotes/origin/<b>`), and if
+  `git rev-parse --is-shallow-repository` says `true`, add `--unshallow`. `release` and
+  `hotfix` always do both for `main` and `develop`. Do not fall back to the compare API
+  for the file list: it stops at 300 files without saying so.
 - **Node may not be on the shell PATH.** nvm4w installs to `C:\nvm4w\nodejs`; export it
   before any `node`, `npm` or `npx` call if the shell cannot find them.
 - **npm 11 does not run dependency install scripts unless approved.** It prints a single

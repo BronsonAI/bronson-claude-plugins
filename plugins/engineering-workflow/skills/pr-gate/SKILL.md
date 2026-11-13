@@ -81,24 +81,30 @@ Then:
     branch whether it *has* required checks:
 
     ```bash
+    # classic branch protection
+    gh api repos/<owner/repo>/branches/<base> \
+      --jq '.protection.required_status_checks // {} | select((.enforcement_level // "off") != "off") | .contexts[]?'
+    # rulesets
     gh api repos/<owner/repo>/rules/branches/<base> \
-      --jq '[.[] | select(.type=="required_status_checks")
-             | .parameters.required_status_checks[]?.context] | length'
+      --jq '.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[]?.context'
     ```
 
-    Use `rules/branches`, **not** `branches/<base>/protection`. The protection endpoint
-    needs admin, and it does not see rulesets at all: this repo's `main` is protected by
-    a ruleset and that endpoint still answers 404 "Branch not protected". A lookup that
-    reports 0 for a protected branch is worse than no lookup, because the gate then says
-    "no required checks" and the PR is marked ready before its checks register.
+    **Run both.** The required checks are the distinct names across the two outputs.
+    Classic protection reports only through the first and rulesets only through the
+    second: `cli/cli` requires 3 checks and `microsoft/vscode` 5 the classic way, and the
+    rulesets endpoint reports 0 for both; BronsonAI's `gandalf` requires 2 through a
+    ruleset, which the first misses. Neither needs admin. Do not use
+    `branches/<base>/protection`: it needs admin and sees no rulesets. A lookup that
+    reports 0 for a protected branch is worse than none, because the gate then says "no
+    required checks" and the PR is marked ready before its checks register.
 
     Three outcomes, and the third is not zero:
 
-    - **0 rules** → nothing to wait for. Say "no required checks" and move on.
+    - **0 across both** → nothing to wait for. Say "no required checks" and move on.
     - **above 0, none reported yet** → they have not registered, which is normal straight
       after `gh pr create`. Wait and ask again; never mark a PR ready on it.
-    - **the lookup itself failed** (auth, network, a 404 you did not expect) → **unknown**,
-      not zero. Say the check is unverified. Never swallow an error into "none
+    - **either call failed** (auth, network, a 404 you did not expect) → **unknown**, not
+      zero. Say the check is unverified. Never swallow an error into "none
       configured" with `|| echo 0`.
   - **8** — still pending (without `--watch`; with `--watch` the command waits instead).
   - **a check actually failed** — blocking.
@@ -114,7 +120,7 @@ they still run:
 
 | PR | How to tell | What to run |
 |---|---|---|
-| Release | head `develop`, base `main` | Blocking pass only, plus the migration and config flags and whether a merged hotfix has no matching back-merge (`release` step 2 — not `behind_by`, which is non-zero after every promotion). Skip branch name, ticket, artifacts, commit prefixes — merge commits and unkeyed commits are expected. |
+| Release | head `develop`, base `main` | Blocking pass only, plus the migration and config flags and whether a hotfix with no back-merge changes files this release also changes (`release` step 2 — a missing back-merge without that overlap is a note, and `behind_by` is never evidence: it is non-zero after every promotion). Skip branch name, ticket, artifacts, commit prefixes — merge commits and unkeyed commits are expected. |
 | Back-merge | head `backmerge/*`, base `develop` | Blocking pass only. Base `develop` is correct here. Never rename the branch or rewrite its commits: they are shared with the hotfix PR and with `main`. A `NOTICKET-<…>` name stays as it is — the key lives in the PR title and body. |
 | Hotfix | head `hotfix/*`, base `main` | Base `main` is correct — that is the whole point of a hotfix. Run every pass normally. The `prod` downtime line is blocking as usual, and a `NOTICKET-<…>` placeholder is not a missing ticket: report whether the real key is in the title and body yet, never ask for the branch to be renamed. |
 | Exempt repo | no `develop` branch | Base is the default branch, and that is correct. Skip the base-branch check entirely. |
