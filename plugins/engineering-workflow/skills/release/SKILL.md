@@ -54,7 +54,7 @@ LAST=$(gh pr list --base main --head develop --state merged --limit 1 \
   --json mergedAt --jq '.[0].mergedAt // ""')
 
 # every hotfix merged into main, with when, so keyless ones can be scoped to since LAST
-gh pr list --base main --state merged --limit 100 \
+gh pr list --base main --state merged --search "head:hotfix/" --limit 1000 \
   --json number,headRefName,title,mergedAt \
   --jq '.[] | select(.headRefName | startswith("hotfix/")) | [.number, .headRefName, .mergedAt, .title] | @tsv'
 
@@ -74,6 +74,9 @@ git diff --name-only origin/main...origin/develop
   `LAST`**: it predates this convention, has no name to look up, and FOIAger's
   `hotfix/prod-env` from 2025 would otherwise ask the same question every release. With
   no earlier release, `LAST` is empty and every hotfix is in scope.
+
+  `head:hotfix/` filters on the server and matches the branch prefix only, so `--limit`
+  counts hotfixes, not every PR into `main`. The `startswith` filter stays as a backstop.
 
   For each hotfix, take the key from its **branch name** — `ENG-221`, or the
   `NOTICKET-<yyyymmddhhmm>` placeholder for one shipped before its ticket existed — and

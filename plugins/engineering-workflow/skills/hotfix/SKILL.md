@@ -35,12 +35,23 @@ the normal gates.
 If production is actively down, still check `list_issues` for an existing ticket, then
 show a one-line draft and take a quick yes — that costs seconds. If the user is
 unanswered, say in your report that the ticket is still to be created and carry on with
-the fix — do not create it unconfirmed. Working without a key, use
-`NOTICKET-<yyyymmddhhmm>` — the time you cut the branch — wherever `{KEY}` appears
+the fix — do not create it unconfirmed. "Unreachable" is not a state you can judge from a
+prompt that has not been answered yet, and a `Bug` + `prod` ticket notifies the team with
+content nobody approved. Ticketing never holds the fix; it also never happens unasked.
+
+Working without a key, generate the placeholder once, as you cut the branch:
+
+```bash
+echo "NOTICKET-$(date -u +%Y%m%d%H%M)"    # e.g. NOTICKET-202611121430
+```
+
+Use that value wherever `{KEY}` appears
 (`hotfix/kevin-NOTICKET-202611121430-token-refresh-loop`, `[NOTICKET-202611121430]`
-commit prefixes, `docs/tickets/NOTICKET-202611121430/`) and say so in the PR body. The
-timestamp is what keeps two keyless hotfixes apart: a bare `NOTICKET` gives them the same
-back-merge branch, and `release` then matches one hotfix to the other's back-merge.
+commit prefixes, `docs/tickets/NOTICKET-202611121430/`) and say so in the PR body. Never
+run the command again for the same hotfix; later steps copy the placeholder from the
+branch name. The timestamp is what keeps two keyless hotfixes apart: a bare `NOTICKET`
+gives them the same back-merge branch, and `release` then matches one hotfix to the
+other's back-merge.
 
 **Once the key exists, do not rename the branch or amend the commits.** By then the branch
 is pushed, the PR is open and the back-merge may be cut from it: amending prefixes needs a
@@ -53,9 +64,7 @@ branch, and renaming by push-and-delete closes the open PR. Instead:
   needs no force-push.
 - Leave both branch names alone. `release` finds the back-merge by deriving its branch
   name from the hotfix's, so the two must carry the same placeholder, character for
-  character. "Unreachable" is not a state you can judge from a
-prompt that has not been answered yet, and a `Bug` + `prod` ticket notifies the team with
-content nobody approved. Ticketing never holds the fix; it also never happens unasked.
+  character.
 
 ## 3. Branch from main
 
@@ -172,6 +181,9 @@ git checkout -b backmerge/main-to-develop-ENG-221 hotfix/kevin-ENG-221-token-ref
 git push -u origin backmerge/main-to-develop-ENG-221
 gh pr create --draft --base develop --title "Back-merge ENG-221 hotfix into develop" --body-file <path>
 ```
+
+Copy the key in the back-merge name from the hotfix branch name, placeholder included —
+never generate a new timestamp for it.
 
 A separate branch, rather than opening `main` into `develop` directly, so you can resolve
 conflicts without pushing to `develop`.
