@@ -33,12 +33,12 @@ ticket, say so rather than silently widening the work.
 ```
 
 - `type` — `feature`, `fix`, `chore` or `hotfix`. `feature` is new functionality, `fix`
-  corrects a defect, `chore` is tooling, dependencies and docs. A `Feature` ticket is
-  `feature` and a `Bug` is `fix`; an `Improvement` ticket takes whichever of `feature`,
-  `fix` or `chore` fits the change. `hotfix` overrides the label: a `Bug` shipped through
-  `hotfix` is `hotfix/`, not `fix/`. For work that will never have a ticket — a chore,
-  CI, docs — use `chore`, `ci` or `docs` and drop the `{KEY}` segment. That is different
-  from work whose ticket does not exist *yet*: a hotfix shipped before its ticket is
+  corrects a defect, `chore` is tooling, dependencies, CI and docs. A `Feature` ticket
+  is `feature` and a `Bug` is `fix`; an `Improvement` ticket takes whichever of
+  `feature`, `fix` or `chore` fits the change. `hotfix` overrides the label: a `Bug`
+  shipped through `hotfix` is `hotfix/`, not `fix/`. Work that will never have a ticket
+  is `chore` and drops the `{KEY}` segment. That is different from work whose ticket
+  does not exist *yet*: a hotfix shipped before its ticket is
   confirmed uses `NOTICKET-<yyyymmddhhmm>` in the key's place and keeps it. Once the key
   exists it goes in the PR titles and bodies; the branch is never renamed (`hotfix` step 2).
 - `first-name` — the author's first name, lowercase. Not a username.
