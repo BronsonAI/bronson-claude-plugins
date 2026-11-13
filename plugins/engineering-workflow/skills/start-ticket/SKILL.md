@@ -35,7 +35,10 @@ From the ticket's label — `Bug`, `Feature` or `Improvement`:
 |---|---|---|
 | `Feature` | `feature` | `intent.md`, `spec.md`, `plan.md` |
 | `Bug` | `fix` | `intent.md`, `plan.md` — add `spec.md` only if the fix changes observable behaviour |
-| `Improvement` | `improvement` | `plan.md` |
+| `Improvement` | `feature`, `fix` or `chore`, whichever fits the change | `plan.md` |
+
+`chore` is tooling, dependencies and docs. If an `Improvement` could be more than one
+branch type, ask.
 
 No type label on the ticket → ask which it is and offer to add the label. Do not guess
 from the title.

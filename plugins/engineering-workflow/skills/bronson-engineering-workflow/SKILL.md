@@ -32,13 +32,15 @@ ticket, say so rather than silently widening the work.
 {type}/{first-name}-{KEY}-{description}
 ```
 
-- `type` — `feature`, `fix`, `improvement` or `hotfix`, from the ticket's type label
-  (`Bug` becomes `fix`). `hotfix` overrides the label: a `Bug` shipped through `hotfix`
-  is `hotfix/`, not `fix/`. For work that will never have a ticket — a chore, CI, docs —
-  use `chore`, `ci` or `docs` and drop the `{KEY}` segment. That is different from work
-  whose ticket does not exist *yet*: a hotfix shipped before its ticket is confirmed uses
-  `NOTICKET-<yyyymmddhhmm>` in the key's place and keeps it. Once the key exists it goes
-  in the PR titles and bodies; the branch is never renamed (`hotfix` step 2).
+- `type` — `feature`, `fix`, `chore` or `hotfix`. `feature` is new functionality, `fix`
+  corrects a defect, `chore` is tooling, dependencies and docs. A `Feature` ticket is
+  `feature` and a `Bug` is `fix`; an `Improvement` ticket takes whichever of `feature`,
+  `fix` or `chore` fits the change. `hotfix` overrides the label: a `Bug` shipped through
+  `hotfix` is `hotfix/`, not `fix/`. For work that will never have a ticket — a chore,
+  CI, docs — use `chore`, `ci` or `docs` and drop the `{KEY}` segment. That is different
+  from work whose ticket does not exist *yet*: a hotfix shipped before its ticket is
+  confirmed uses `NOTICKET-<yyyymmddhhmm>` in the key's place and keeps it. Once the key
+  exists it goes in the PR titles and bodies; the branch is never renamed (`hotfix` step 2).
 - `first-name` — the author's first name, lowercase. Not a username.
 - `KEY` — the Linear key, uppercase, matching the commit prefix and the artifact
   directory so all three read the same.
@@ -83,7 +85,7 @@ there, skip `release` and the `hotfix` back-merge, and do not claim what a merge
 — read the repo's `CLAUDE.md` for that. Never create a `develop` branch to make a repo
 fit this section.
 
-- Feature, fix and improvement branches base on **`develop`**. CI/CD deploys `develop`
+- Feature, fix and chore branches base on **`develop`**. CI/CD deploys `develop`
   to the dev environment.
 - Promotion is by merging the whole branch upward: `develop` into `main`, which CI/CDs
   to production. Use `release` for that PR. Cherry-picking is an exception that needs a

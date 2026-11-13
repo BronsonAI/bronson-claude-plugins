@@ -37,7 +37,7 @@ Stop and fix before opening anything:
 
 ## 2. Pick the base
 
-- Feature, fix and improvement → `develop`.
+- Feature, fix and chore → `develop`.
 - **Unless the branch is stacked.** If one of your open PRs is an ancestor of this
   branch, base on that branch instead:
 
