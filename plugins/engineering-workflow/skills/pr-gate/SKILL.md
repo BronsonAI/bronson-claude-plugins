@@ -157,6 +157,11 @@ category: the question is always "if this merges as is, what goes wrong?"
   that a pre-creation gate reads from the draft body rather than the diff.
 - Work the ticket does not ask for that carries its own risk — a second migration, a new
   endpoint, a dependency bump. Name it.
+- An open question you need answered before you can approve: one whose answer decides
+  whether the PR is correct or safe. State the question and the failure if the answer goes
+  the wrong way ("if the worker can run twice, this charges twice"). That conditional
+  failure is what keeps it from being an opinion. A question that changes nothing about
+  the verdict is not a finding; ask it in the body or drop it.
 
 ### Non-blocking — say it, approve anyway
 
@@ -205,8 +210,12 @@ teammate. Neither is yours to submit on a reading of a diff. Print the verdict b
 which of the two you are about to post, and wait. "Review this PR" asks for the review,
 not for it to be filed.
 
-If the user does not want to post, give them the body and stop. `--comment` carries no
-state and is the middle ground when they are unsure.
+If the user does not want to post, give them the body and stop.
+
+**Never offer or post `--comment`.** A comment review carries no state, so the author
+cannot tell whether they are blocked and the PR's status says nothing. A question that
+has to be answered before you can approve is a request for changes, with the question in
+the body. The only choices are request changes, approve, or not posting.
 
 Once they have said yes:
 
